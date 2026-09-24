@@ -1,11 +1,11 @@
 <?php
 // Reads settings from environment variables (set these in Render).
 // Falls back to local XAMPP values when they are not set.
-$host    = getenv('DB_HOST') ?: 'localhost';
-$port    = getenv('DB_PORT') ?: '3306';
+$host    = getenv('DB_HOST') ?: 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com';
+$port    = getenv('DB_PORT') ?: '4000';
 $dbname  = getenv('DB_NAME') ?: 'msdvreportingsystem';
-$db_user = getenv('DB_USER') ?: 'root';
-$db_pass = getenv('DB_PASSWORD') ?: '';
+$db_user = getenv('DB_USER') ?: 'tqzcLTEcYiBCmic.root';
+$db_pass = getenv('DB_PASSWORD') ?: '1px0pXM2rqElrfPb';
 
 $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
