@@ -21,7 +21,7 @@ function getScore($minor, $major){
     return ((int)$minor * 1) + ((int)$major * 2);
 }
 
-/* 0-2 Low | 3-5 Moderate | 6-8 High | 9+ Critical */
+/* 0-2 Low | 3-5 Moderate | 6-8 High | 9-11 Critical (12+ also treated as Critical) */
 function getRisk($minor, $major){
     $score = getScore($minor, $major);
     if($score >= 9) return ['label'=>'Critical','class'=>'danger', 'color'=>'#dc2626','bg'=>'#fff0f0'];
@@ -291,7 +291,7 @@ body { display:flex; background:var(--bg); min-height:100vh; font-family:'Plus J
         <div>
           <div class="summary-label">High Risk</div>
           <div class="summary-value"><?= $high ?></div>
-          
+        
         </div>
       </div>
       <div class="summary-card">
@@ -299,7 +299,7 @@ body { display:flex; background:var(--bg); min-height:100vh; font-family:'Plus J
         <div>
           <div class="summary-label">Critical</div>
           <div class="summary-value"><?= $critical ?></div>
-       
+         
         </div>
       </div>
     </div>
