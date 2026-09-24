@@ -16,19 +16,31 @@ $notifList = $notifStmt->fetchAll();
 
 $allStudents = $pdo->query("SELECT s.student_id,s.full_name,SUM(CASE WHEN v.category='minor' THEN 1 ELSE 0 END) as minor_count,SUM(CASE WHEN v.category='major' THEN 1 ELSE 0 END) as major_count,COUNT(v.id) as total FROM students s LEFT JOIN violations v ON s.student_id=v.student_id GROUP BY s.student_id")->fetchAll();
 
-function getRisk($total){
-    if($total>=5)return['label'=>'Critical','class'=>'danger','color'=>'#dc2626','bg'=>'#fff0f0'];
-    if($total>=4)return['label'=>'High','class'=>'warning','color'=>'#d97706','bg'=>'#fffbeb'];
-    if($total>=2)return['label'=>'Moderate','class'=>'info','color'=>'#2563eb','bg'=>'#eff4ff'];
-    return['label'=>'Low','class'=>'success','color'=>'#16a34a','bg'=>'#f0fdf4'];
+/* ── POINT SYSTEM: minor = 1 point, major = 2 points ── */
+function getScore($minor, $major){
+    return ((int)$minor * 1) + ((int)$major * 2);
+}
+
+/* 0-2 Low | 3-5 Moderate | 6-8 High | 9+ Critical */
+function getRisk($minor, $major){
+    $score = getScore($minor, $major);
+    if($score >= 9) return ['label'=>'Critical','class'=>'danger', 'color'=>'#dc2626','bg'=>'#fff0f0'];
+    if($score >= 6) return ['label'=>'High',    'class'=>'warning','color'=>'#d97706','bg'=>'#fffbeb'];
+    if($score >= 3) return ['label'=>'Moderate','class'=>'info',   'color'=>'#2563eb','bg'=>'#eff4ff'];
+    return               ['label'=>'Low',     'class'=>'success','color'=>'#16a34a','bg'=>'#f0fdf4'];
 }
 
 $moderate=0;$high=0;$critical=0;
-foreach($allStudents as $s){$r=getRisk($s['total']);if($r['label']==='Moderate')$moderate++;if($r['label']==='High')$high++;if($r['label']==='Critical')$critical++;}
+foreach($allStudents as $s){
+    $r = getRisk($s['minor_count'], $s['major_count']);
+    if($r['label']==='Moderate') $moderate++;
+    if($r['label']==='High')     $high++;
+    if($r['label']==='Critical') $critical++;
+}
 
 $search=trim($_GET['search']??'');$filterRisk=$_GET['risk']??'';
 $filtered=array_filter($allStudents,function($s)use($search,$filterRisk){
-    $r=getRisk($s['total']);
+    $r = getRisk($s['minor_count'], $s['major_count']);
     $ms=!$search||stripos($s['full_name'],$search)!==false||stripos($s['student_id'],$search)!==false;
     $mr=!$filterRisk||$r['label']===$filterRisk;
     return $ms&&$mr;
@@ -185,6 +197,9 @@ body { display:flex; background:var(--bg); min-height:100vh; font-family:'Plus J
 .pip.minor-empty   { background:transparent; border:2px solid #2563eb; }
 .pip.major-filled  { background:#dc2626; }
 .pip.major-empty   { background:transparent; border:2px solid #dc2626; }
+.pip-extra { font-size:11px; font-weight:600; margin-left:2px; }
+.pip-extra.minor { color:#2563eb; }
+.pip-extra.major { color:#dc2626; }
 </style>
 </head>
 <body>
@@ -261,9 +276,6 @@ body { display:flex; background:var(--bg); min-height:100vh; font-family:'Plus J
   <!-- CONTENT -->
   <div class="content">
 
-    <!-- Page top -->
-    
-
     <!-- Summary cards -->
     <div class="summary-grid">
       <div class="summary-card">
@@ -271,7 +283,7 @@ body { display:flex; background:var(--bg); min-height:100vh; font-family:'Plus J
         <div>
           <div class="summary-label">Moderate Risk</div>
           <div class="summary-value"><?= $moderate ?></div>
-          <div class="summary-sub">2+ violations</div>
+          
         </div>
       </div>
       <div class="summary-card">
@@ -279,7 +291,7 @@ body { display:flex; background:var(--bg); min-height:100vh; font-family:'Plus J
         <div>
           <div class="summary-label">High Risk</div>
           <div class="summary-value"><?= $high ?></div>
-          <div class="summary-sub">4+ violations</div>
+          
         </div>
       </div>
       <div class="summary-card">
@@ -287,7 +299,7 @@ body { display:flex; background:var(--bg); min-height:100vh; font-family:'Plus J
         <div>
           <div class="summary-label">Critical</div>
           <div class="summary-value"><?= $critical ?></div>
-          <div class="summary-sub">5+ violations</div>
+       
         </div>
       </div>
     </div>
@@ -324,22 +336,28 @@ body { display:flex; background:var(--bg); min-height:100vh; font-family:'Plus J
         <tbody>
           <?php if(empty($filtered)): ?>
           <tr class="empty-row"><td colspan="5"><i class="fas fa-users" style="font-size:20px;display:block;margin-bottom:8px;"></i>No students found</td></tr>
-          <?php else: foreach($filtered as $s): $risk=getRisk($s['total']); ?>
+          <?php else: foreach($filtered as $s):
+              $risk  = getRisk($s['minor_count'], $s['major_count']);
+              $minorCount = (int)$s['minor_count'];
+              $majorCount = (int)$s['major_count'];
+          ?>
           <tr>
             <td class="sid"><?= htmlspecialchars($s['student_id']) ?></td>
             <td class="name"><?= htmlspecialchars($s['full_name']) ?></td>
             <td>
               <div class="tally-wrap">
                 <?php for($i=1;$i<=5;$i++): ?>
-                <div class="pip <?= $i<=$s['minor_count']?'minor-filled':'minor-empty' ?>"></div>
+                <div class="pip <?= $i<=$minorCount?'minor-filled':'minor-empty' ?>"></div>
                 <?php endfor; ?>
+                <?php if($minorCount>5): ?><span class="pip-extra minor">+<?= $minorCount-5 ?></span><?php endif; ?>
               </div>
             </td>
             <td>
               <div class="tally-wrap">
                 <?php for($i=1;$i<=3;$i++): ?>
-                <div class="pip <?= $i<=$s['major_count']?'major-filled':'major-empty' ?>"></div>
+                <div class="pip <?= $i<=$majorCount?'major-filled':'major-empty' ?>"></div>
                 <?php endfor; ?>
+                <?php if($majorCount>3): ?><span class="pip-extra major">+<?= $majorCount-3 ?></span><?php endif; ?>
               </div>
             </td>
             <td>
