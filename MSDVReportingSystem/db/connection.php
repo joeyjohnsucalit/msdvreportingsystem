@@ -10,6 +10,7 @@ $db_pass = getenv('DB_PASSWORD') ?: '1px0pXM2rqElrfPb';
 $options = [
     PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+    PDO::MYSQL_ATTR_INIT_COMMAND => "SET SESSION sql_mode = REPLACE(@@sql_mode, 'ONLY_FULL_GROUP_BY', '')",
 ];
 
 // TiDB Cloud requires a secure (TLS) connection
