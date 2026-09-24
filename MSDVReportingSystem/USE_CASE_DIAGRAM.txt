@@ -1,0 +1,292 @@
+===============================================================================
+MSDV REPORTING SYSTEM - USE CASE DIAGRAM
+===============================================================================
+
+System Overview:
+The system supports five actors: Admin, Student, Teacher, CSU, and JASSU.
+Each actor interacts with the system according to their assigned responsibilities
+in violation reporting, monitoring, disciplinary action, appeals, and record
+management.
+
+
+Actors:
+1. Admin
+   - Manages the entire system
+   - Reviews violations and student appeals
+   - Assigns sanctions and updates disciplinary status
+   - Manages user accounts and student records
+   - Views dashboards and analytics
+   - Performs data backup and recovery actions
+
+2. Student
+   - Logs in to view personal dashboard
+   - Views personal violation records
+   - Submits appeals for violations
+   - Changes password on first login
+
+3. Teacher
+   - Logs in and submits violation reports
+   - Uploads evidence for student violations
+   - Views own submitted reports
+
+4. CSU
+   - Logs in and submits violation reports
+   - Uploads evidence
+   - Views own submitted reports
+
+5. JASSU
+   - Logs in and submits violation reports
+   - Uploads evidence
+   - Views own submitted reports
+
+
+Use Cases by Actor:
+
+ADMIN USE CASES
+- Login to System
+- View Admin Dashboard
+- View Monthly and Statistical Reports
+- View Student Violations
+- Review Total Counts and Alerts
+- Manage User Accounts
+- Add User
+- Edit User
+- Change User Password
+- Delete User
+- Manage Student Records
+- Review and Process Appeals
+- Approve Appeal
+- Reject Appeal
+- Manage Disciplinary Actions
+- Update Case Status
+- Set Ongoing Status
+- Set Completed Status
+- Send Notifications
+- View System Analytics
+- Perform Data Backup
+- Change Admin Password
+- Logout
+
+STUDENT USE CASES
+- Login to System
+- View Student Dashboard
+- View Personal Violations
+- View Disciplinary Actions
+- Submit Appeal
+- View Appeal Status
+- Change Password on First Login
+- Receive Notification
+- Logout
+
+TEACHER USE CASES
+- Login to System
+- Change Password on First Login
+- Submit Violation Report
+- Upload Evidence
+- View Submitted Reports
+- Logout
+
+CSU USE CASES
+- Login to System
+- Change Password on First Login
+- Submit Violation Report
+- Upload Evidence
+- View Submitted Reports
+- Logout
+
+JASSU USE CASES
+- Login to System
+- Change Password on First Login
+- Submit Violation Report
+- Upload Evidence
+- View Submitted Reports
+- Logout
+
+
+Textual Use Case Diagram:
+
++-------------------+
+|       Admin       |
++-------------------+
+      |
+      | 1. Login
+      V
++----------------------------------------+
+|  Manage System & Student Discipline    |
++----------------------------------------+
+      |------------------------------------|
+      |  - View Dashboard                 |
+      |  - View Violations                |
+      |  - Manage Records                 |
+      |  - Manage Users                   |
+      |  - Review Appeals                 |
+      |  - Update Disciplinary Actions    |
+      |  - Backup Data                    |
+      |  - Change Password                |
+      |------------------------------------|
+
+
++-------------------+
+|      Student      |
++-------------------+
+      |
+      | 1. Login
+      V
++----------------------------------------+
+|  Personal Student Portal               |
++----------------------------------------+
+      |------------------------------------|
+      |  - View Dashboard                  |
+      |  - View My Violations              |
+      |  - View Sanctions                 |
+      |  - Submit Appeal                   |
+      |  - Check Appeal Status             |
+      |  - Change Password                 |
+      |  - Receive Notifications           |
+      |------------------------------------|
+
+
++-------------------+
+|     Teacher       |
++-------------------+
+      |
+      | 1. Login
+      V
++----------------------------------------+
+|  Staff Reporting Module                 |
++----------------------------------------+
+      |------------------------------------|
+      |  - Submit Violation Report         |
+      |  - Upload Evidence                 |
+      |  - View My Reports                 |
+      |  - Change Password                 |
+      |------------------------------------|
+
+
++-------------------+
+|       CSU         |
++-------------------+
+      |
+      | 1. Login
+      V
++----------------------------------------+
+|  Staff Reporting Module                 |
++----------------------------------------+
+      |------------------------------------|
+      |  - Submit Violation Report         |
+      |  - Upload Evidence                 |
+      |  - View My Reports                 |
+      |  - Change Password                 |
+      |------------------------------------|
+
+
++-------------------+
+|      JASSU        |
++-------------------+
+      |
+      | 1. Login
+      V
++----------------------------------------+
+|  Staff Reporting Module                 |
++----------------------------------------+
+      |------------------------------------|
+      |  - Submit Violation Report         |
+      |  - Upload Evidence                 |
+      |  - View My Reports                 |
+      |  - Change Password                 |
+      |------------------------------------|
+
+
+System Interaction Relationships:
+
+Teacher / CSU / JASSU ----------------> Submit Violation Report ----------------> Admin
+   |
+   |-- Upload Evidence --------------------------------------------------------> Admin
+   |
+   |-- View My Reports ----------------------------------------------------------> System
+
+Student ----------------------------------------------------------------------> Submit Appeal
+   |
+   |-- View Dashboard ----------------------------------------------------------> System
+   |
+   |-- View Violations ---------------------------------------------------------> System
+
+Admin ------------------------------------------------------------------------> Review Violations
+   |
+   |-- Manage Disciplinary Action ---------------------------------------------> Student
+   |
+   |-- Review Appeal ------------------------------------------------------------> Student
+   |
+   |-- Manage User Accounts ----------------------------------------------------> System
+   |
+   |-- View Analytics -----------------------------------------------------------> System
+
+
+Use Case Flow Summary:
+1. User logs in with username and password.
+2. System validates role and redirects to the correct dashboard or report form.
+3. Staff roles submit violation reports with evidence.
+4. Admin reviews incoming violation records and decides sanctions.
+5. Students check their violation records and submit appeals.
+6. Admin approves or rejects appeals and updates disciplinary action status.
+7. Students receive notifications and can view updated outcomes.
+8. Admin manages users, records, and reports for full system control.
+
+
+Use Case Relationship Diagram (Structured):
+
+[Admin]
+   |
+   +--> [Login]
+   +--> [Manage Users]
+   +--> [Manage Student Records]
+   +--> [View Dashboard]
+   +--> [Review Violations]
+   +--> [Manage Disciplinary Actions]
+   +--> [Review Appeals]
+   +--> [Approve/Reject Appeal]
+   +--> [Backup Data]
+   +--> [Change Password]
+   +--> [Logout]
+
+[Student]
+   |
+   +--> [Login]
+   +--> [View Dashboard]
+   +--> [View Violations]
+   +--> [Submit Appeal]
+   +--> [View Appeal Status]
+   +--> [Change Password]
+   +--> [Receive Notification]
+   +--> [Logout]
+
+[Teacher]
+   |
+   +--> [Login]
+   +--> [Change Password]
+   +--> [Submit Violation Report]
+   +--> [Upload Evidence]
+   +--> [View My Reports]
+   +--> [Logout]
+
+[CSU]
+   |
+   +--> [Login]
+   +--> [Change Password]
+   +--> [Submit Violation Report]
+   +--> [Upload Evidence]
+   +--> [View My Reports]
+   +--> [Logout]
+
+[JASSU]
+   |
+   +--> [Login]
+   +--> [Change Password]
+   +--> [Submit Violation Report]
+   +--> [Upload Evidence]
+   +--> [View My Reports]
+   +--> [Logout]
+
+
+End of Use Case Document
+===============================================================================

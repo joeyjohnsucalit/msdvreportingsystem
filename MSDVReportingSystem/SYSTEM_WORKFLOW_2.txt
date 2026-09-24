@@ -1,0 +1,98 @@
+MSDV Reporting System - Program Workflow
+
+1. System Access and Authentication
+- The user opens the system URL in the browser.
+- The system loads the login page.
+- The user enters their credentials (username and password).
+- The system checks the submitted credentials against the database.
+- If valid, the user is redirected to their role-specific dashboard.
+- If invalid, the system displays an error message and the user remains on the login page.
+- Users can log out anytime from the interface, which ends the session and redirects to login.
+
+2. Role-Based Access
+- The system identifies the user's role after authentication.
+- Roles may include:
+  - Student
+  - Teacher
+  - CSU
+  - JASSU
+  - Admin
+- Each role has a different dashboard and set of allowed actions.
+- The system prevents access to pages or features outside the user's role permissions.
+
+3. Student Workflow
+- The student logs in and views the student dashboard.
+- The student can create a report using the reporting form.
+- The report includes relevant details about the violation or incident.
+- The student submits the report to the system.
+- The system stores the report in the database.
+- The student can view their submitted reports in "My Reports".
+- The student may track the status of their report if the system supports it.
+
+4. Teacher Workflow
+- The teacher logs in to the teacher dashboard.
+- The teacher can access the reporting form to create or submit reports.
+- The teacher can view their own submitted reports under "My Reports".
+- The teacher may be involved in report validation, review, or creation as part of the system workflow.
+- The teacher may also have limited access according to their assigned permissions.
+
+5. CSU Workflow
+- The CSU user logs in and accesses the CSU dashboard.
+- CSU users can open and manage reports relevant to their function.
+- They can review incident information and monitor report activity.
+- CSU users can access their own reports or reporting tools as needed.
+- The system supports CSU-level handling of reports and related administrative tasks.
+
+6. JASSU Workflow
+- The JASSU user logs in and accesses the JASSU dashboard.
+- JASSU users can create and manage reports within their role scope.
+- They can view their reports in the "My Reports" section.
+- JASSU users can interact with the reporting workflow based on role permissions.
+
+7. Admin Workflow
+- The admin logs in and accesses the admin dashboard.
+- The admin can manage user accounts and roles.
+- The admin can view and manage student records.
+- The admin can review violation records and disciplinary actions.
+- The admin can access risk levels, student appeals, and data backup features.
+- The admin can monitor system activity and notifications.
+- The admin can change their own password for account security.
+
+8. Report Submission and Record Management
+- Users fill out the form with the necessary details.
+- Submitted records are validated before saving.
+- The system stores data in the database with the corresponding user and role information.
+- Reports can be retrieved later through the user’s report list or admin record views.
+- Records may be reviewed, edited, or processed depending on user permissions.
+
+9. Violations and Disciplinary Actions
+- Reports may be associated with student violations.
+- The admin or authorized staff can review violation entries.
+- Disciplinary actions may be assigned or recorded.
+- Student appeals may be reviewed and resolved through the system.
+- Risk levels can be analyzed and updated based on recorded violations or cases.
+
+10. Notifications and Dashboard Data
+- The system may generate notifications for relevant users.
+- Dashboard pages fetch data from backend scripts and database queries.
+- Charts and summary information are created using server-side or AJAX-based data retrieval.
+- These dashboards provide overview information for monitoring reports, risk levels, and violations.
+
+11. Data Backup and System Maintenance
+- Administrators can create system backups and export data when needed.
+- The backup process stores data for protection and recovery.
+- The system supports routine maintenance through administrative management tools.
+
+12. Session and Security Controls
+- Each user session is tracked while logged in.
+- The system checks authentication before allowing access to restricted pages.
+- The system safeguards pages using role-based access control.
+- Sensitive operations such as password changes require secure user action.
+
+13. End of Workflow
+- The user logs out when finished.
+- The session is destroyed, and the user is redirected to the login page.
+- The system remains ready for the next user login.
+
+System Summary:
+This workflow describes the general process of user login, role-based access, report submission, record management, administrative oversight, and secure session handling in the MSDV Reporting System.

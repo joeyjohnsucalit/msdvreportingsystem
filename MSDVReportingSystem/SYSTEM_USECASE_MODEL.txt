@@ -1,0 +1,497 @@
+===============================================================================
+MSDV REPORTING SYSTEM - USE CASE MODEL
+===============================================================================
+
+1. INTRODUCTION
+This use case model describes the functional behavior of the MSDV Reporting
+System. It identifies the actors, use cases, relationships, and the expected
+interaction flow between users and the system.
+
+The system supports the following actors:
+- Admin
+- Student
+- Teacher
+- CSU (Course Supervision Unit)
+- JASSU
+
+===============================================================================
+2. ACTOR DEFINITIONS
+===============================================================================
+
+ACTOR: Admin
+Description:
+Responsible for overall system administration, user management, disciplinary
+control, monitoring, analytics, and decision-making on student appeals.
+
+Responsibilities:
+- Manage users and student records
+- View dashboard analytics
+- Review all violations
+- Assign or update disciplinary actions
+- Approve or reject student appeals
+- Send notifications
+- Backup data
+- Change admin password
+
+ACTOR: Student
+Description:
+A student who logs in to view personal records and track violations or
+appeals.
+
+Responsibilities:
+- View personal dashboard
+- View violations and sanctions
+- Submit an appeal
+- View appeal status
+- Change password
+
+ACTOR: Teacher
+Description:
+A staff member who files violation records against students.
+
+Responsibilities:
+- Submit violation reports
+- Upload evidence
+- Review personal reports
+- Change password
+
+ACTOR: CSU
+Description:
+A staff unit that reports student violations and monitors related records.
+
+Responsibilities:
+- Submit violation reports
+- Upload evidence
+- View submitted reports
+- Change password
+
+ACTOR: JASSU
+Description:
+A department actor authorized to submit violation reports.
+
+Responsibilities:
+- Submit violation reports
+- Upload evidence
+- View submitted reports
+- Change password
+
+===============================================================================
+3. USE CASE MODEL SUMMARY
+===============================================================================
+
+Primary use cases:
+- Login
+- First Login Password Change
+- Submit Violation Report
+- View My Reports
+- View Dashboard
+- View Student Violations
+- Manage Disciplinary Actions
+- Submit Appeal
+- Review Appeals
+- Manage Users
+- Manage Student Records
+- View Analytics
+- Change Password
+- Logout
+- Backup Data
+
+-------------------------------------------------------------------------------
+4. USE CASE TABLE
+-------------------------------------------------------------------------------
+
+UC-01: Login
+Actor: Admin, Student, Teacher, CSU, JASSU
+Trigger: User enters username and password.
+Preconditions:
+- User has an existing account in the system.
+- Database is available.
+Main Flow:
+1. User opens login page.
+2. User enters username and password.
+3. System validates credentials.
+4. System checks user role.
+5. System redirects user to the appropriate page.
+Postconditions:
+- User is logged in and session is created.
+- User is directed to their role-based dashboard or report form.
+Alternate Flow:
+- Invalid credentials -> system displays error and returns to login.
+
+UC-02: First Login Password Change
+Actor: Admin, Student, Teacher, CSU, JASSU
+Trigger: User logs in for the first time.
+Preconditions:
+- User is authenticated.
+- is_first_login = 1.
+Main Flow:
+1. System detects first login status.
+2. System prompts user to create a new password.
+3. User enters a new password and confirm password.
+4. System validates length and match.
+5. System hashes and saves the new password.
+6. System sets is_first_login = 0.
+7. System clears remember token.
+Postconditions:
+- User can continue to use the system normally.
+Alternate Flow:
+- Missing or mismatched password -> system shows validation error.
+
+UC-03: Submit Violation Report
+Actor: Teacher, CSU, JASSU
+Trigger: User submits a violation form.
+Preconditions:
+- User is logged in.
+- The student ID exists in the student records.
+Main Flow:
+1. User opens the report form.
+2. User enters student ID, violation category, violation type, and description.
+3. User optionally uploads evidence.
+4. System validates the input.
+5. System stores the violation record in the database.
+6. System sends notification to Admin.
+7. System displays confirmation message.
+Postconditions:
+- Violation is recorded and visible to admin.
+Alternate Flow:
+- Student ID invalid -> system shows "Student ID not found" message.
+- Evidence upload fails -> report is still saved without evidence.
+
+UC-04: View My Reports
+Actor: Teacher, CSU, JASSU
+Trigger: User opens the my reports page.
+Preconditions:
+- User is logged in.
+Main Flow:
+1. User navigates to "My Reports".
+2. System retrieves all reports submitted by the current user.
+3. System displays report details such as student, category, status, date, and evidence.
+Postconditions:
+- User can review own report history.
+
+UC-05: View Student Dashboard
+Actor: Student
+Trigger: Student logs in.
+Preconditions:
+- Student is authenticated.
+Main Flow:
+1. Student accesses dashboard.
+2. System loads personal student information.
+3. System retrieves all related violations and sanctions.
+4. System loads notifications and appeal statuses.
+5. Dashboard is displayed.
+Postconditions:
+- Student sees all personal violation and disciplinary info.
+
+UC-06: View Personal Violations
+Actor: Student
+Trigger: Student opens dashboard or records section.
+Preconditions:
+- Student is authenticated.
+Main Flow:
+1. System identifies current student record.
+2. System retrieves all violations linked to the student.
+3. System displays violation details and status.
+Postconditions:
+- Student can review violation history.
+
+UC-07: Submit Appeal
+Actor: Student
+Trigger: Student submits an appeal for a violation.
+Preconditions:
+- Student is authenticated.
+- Student has at least one violation record.
+- No existing appeal exists for the same violation.
+Main Flow:
+1. Student selects a violation.
+2. Student writes an explanation for the appeal.
+3. System validates the appeal request.
+4. System creates an appeal record.
+5. System sends notification to Admin.
+6. System confirms appeal submission.
+Postconditions:
+- Appeal is recorded and pending admin review.
+Alternate Flow:
+- Duplicate appeal -> system rejects with an error message.
+
+UC-08: View Appeal Status
+Actor: Student
+Trigger: Student checks appeal results.
+Preconditions:
+- Student is authenticated.
+Main Flow:
+1. Student opens dashboard.
+2. System loads all appeal records linked to the student.
+3. System shows approval or rejection status.
+Postconditions:
+- Student is aware of the decision outcome.
+
+UC-09: View Admin Dashboard
+Actor: Admin
+Trigger: Admin logs in.
+Preconditions:
+- Admin is authenticated.
+Main Flow:
+1. System loads dashboard statistics.
+2. System retrieves totals for students, violations, pending cases, and completed cases.
+3. System loads notifications.
+4. System prepares charts for analysis.
+5. Dashboard is displayed.
+Postconditions:
+- Admin can monitor system activity and trends.
+
+UC-10: View Violations and Analytics
+Actor: Admin
+Trigger: Admin accesses violation records or reports.
+Preconditions:
+- Admin is authenticated.
+Main Flow:
+1. Admin opens violation records or analytics pages.
+2. System retrieves all violation records.
+3. System supports filtering by student, category, and status.
+4. System displays analytics and charts.
+Postconditions:
+- Admin gains visibility over violation trends and records.
+
+UC-11: Manage User Accounts
+Actor: Admin
+Trigger: Admin accesses user management page.
+Preconditions:
+- Admin is authenticated.
+Main Flow:
+1. Admin chooses to add, edit, or delete a user.
+2. System validates operation.
+3. System updates the users table.
+4. System confirms action.
+Postconditions:
+- User records are updated accordingly.
+Alternate Flow:
+- Duplicate username -> system displays error.
+- Incorrect deletion password -> system rejects delete action.
+
+UC-12: Manage Student Records
+Actor: Admin
+Trigger: Admin updates or views student information.
+Preconditions:
+- Admin is authenticated.
+Main Flow:
+1. Admin searches or selects a student.
+2. System loads the student record.
+3. Admin modifies or reviews data.
+4. System updates the database.
+Postconditions:
+- Student information is current and accurate.
+
+UC-13: Manage Disciplinary Actions
+Actor: Admin
+Trigger: Admin updates a disciplinary status.
+Preconditions:
+- Admin is authenticated.
+- A violation/disciplined case exists.
+Main Flow:
+1. Admin selects a disciplinary action.
+2. Admin changes status from pending to ongoing or completed.
+3. System validates that status is not moved backward.
+4. System updates the disciplinary record and corresponding violation status.
+5. System records start_date/end_date if needed.
+6. System notifies the student.
+Postconditions:
+- Disciplinary case progression is updated.
+Alternate Flow:
+- Backward status update -> system rejects action with notification.
+
+UC-14: Review and Process Appeals
+Actor: Admin
+Trigger: Admin opens the student appeals page.
+Preconditions:
+- Admin is authenticated.
+Main Flow:
+1. Admin views appeal details and penalties.
+2. Admin chooses to approve or reject.
+3. System updates appeal status.
+4. System applies corresponding action.
+5. System notifies student.
+Postconditions:
+- Appeal outcome is recorded and shared with student.
+
+UC-15: Approve Appeal
+Actor: Admin
+Trigger: Admin approves the student's appeal.
+Preconditions:
+- Appeal exists and is pending.
+Main Flow:
+1. Admin selects appeal.
+2. System updates appeal status to approved.
+3. System removes the violation and related disciplinary records.
+4. System sends approval notification to student.
+5. System records confirmation.
+Postconditions:
+- Violation is cleared from the student record.
+
+UC-16: Reject Appeal
+Actor: Admin
+Trigger: Admin rejects the student's appeal.
+Preconditions:
+- Appeal exists and is pending.
+Main Flow:
+1. Admin selects appeal.
+2. System updates appeal status to rejected.
+3. System keeps the violation record intact.
+4. System sends rejection notification to student.
+Postconditions:
+- Student remains accountable for the violation.
+
+UC-17: Change Password
+Actor: Admin, Student, Teacher, CSU, JASSU
+Trigger: User changes password.
+Preconditions:
+- User is authenticated.
+Main Flow:
+1. User enters current password and new password.
+2. System validates current password.
+3. System validates new password format and match.
+4. System hashes and saves new password.
+5. System clears remember token.
+Postconditions:
+- Password is updated successfully.
+
+UC-18: Backup Data
+Actor: Admin
+Trigger: Admin requests database backup.
+Preconditions:
+- Admin is authenticated.
+Main Flow:
+1. Admin opens backup page.
+2. System creates database backup file.
+3. System downloads or stores backup data.
+4. System confirms backup success.
+Postconditions:
+- Recovery file is available.
+
+UC-19: Logout
+Actor: Admin, Student, Teacher, CSU, JASSU
+Trigger: User clicks logout.
+Preconditions:
+- User is logged in.
+Main Flow:
+1. User clicks logout button.
+2. System destroys session.
+3. System clears remember token cookie.
+4. System redirects to login page.
+Postconditions:
+- User is logged out and session is closed.
+
+===============================================================================
+5. USE CASE RELATIONSHIPS
+===============================================================================
+
+Include relationships:
+- <<includes>>: Login is required for all protected use cases.
+- <<extends>>: First Login Password Change extends Login when is_first_login = 1.
+- <<includes>>: Submit Violation Report includes validation and notification.
+- <<includes>>: Submit Appeal includes validation and notification.
+- <<includes>>: Manage Disciplinary Actions includes notification to student.
+- <<includes>>: Approve Appeal includes removal of violation and disciplinary records.
+- <<includes>>: Reject Appeal includes notification and status update.
+- <<includes>>: Manage User Accounts includes account validation and database update.
+
+Example relationship model:
+
+Login
+   +-- includes --> Role-Based Redirect
+   +-- extends --> First Login Password Change
+
+Submit Violation Report
+   +-- includes --> Validate Student ID
+   +-- includes --> Save Violation Record
+   +-- includes --> Notify Admin
+
+Submit Appeal
+   +-- includes --> Validate Existing Appeal
+   +-- includes --> Store Appeal
+   +-- includes --> Notify Admin
+
+Manage Disciplinary Actions
+   +-- includes --> Update Status
+   +-- includes --> Notify Student
+
+Review Appeals
+   +-- includes --> Approve Appeal or Reject Appeal
+
+===============================================================================
+6. SYSTEM USE CASE DIAGRAM DESCRIPTION
+===============================================================================
+
+Use case diagram structure:
+
+[Admin]
+  - Login
+  - Manage Users
+  - Review Violations
+  - Manage Student Records
+  - Manage Disciplinary Actions
+  - Review Appeals
+  - Approve Appeal
+  - Reject Appeal
+  - View Dashboard
+  - Backup Data
+  - Change Password
+  - Logout
+
+[Student]
+  - Login
+  - View Dashboard
+  - View Violations
+  - Submit Appeal
+  - View Appeal Status
+  - Change Password
+  - Logout
+
+[Teacher]
+  - Login
+  - Change Password
+  - Submit Violation Report
+  - View My Reports
+  - Logout
+
+[CSU]
+  - Login
+  - Change Password
+  - Submit Violation Report
+  - View My Reports
+  - Logout
+
+[JASSU]
+  - Login
+  - Change Password
+  - Submit Violation Report
+  - View My Reports
+  - Logout
+
+System boundary:
+The system boundary includes the following major functional areas:
+- Authentication and authorization
+- Reporting module
+- Student dashboard
+- Disciplinary actions
+- Appeals management
+- User management
+- Analytics and dashboard reporting
+- Backup and data maintenance
+
+===============================================================================
+7. FINAL SUMMARY
+===============================================================================
+The MSDV Reporting System use case model centers around a role-based workflow:
+- Staff members submit violation reports.
+- Administrators monitor and manage those reports.
+- Students view violations and submit appeals.
+- Administrators decide appeals and update sanctions.
+- All actors are authenticated and authorized through the system.
+
+This model captures the principal business interactions and system functionalities
+required by the application.
+
+===============================================================================
+END OF USE CASE MODEL
+===============================================================================

@@ -1,0 +1,143 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background: linear-gradient(to bottom, #091a47, #081F5D);
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Oswald', sans-serif;
+}
+
+.wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.mcclogo {
+    background: #091a47;
+    border-radius: 50%;
+    margin-bottom: -70px;
+    z-index: 2;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loginlogo {
+    border: 5px solid #091a47;
+    border-radius: 100%;
+    width: 155px;
+    height: 155px;
+    display: block;
+}
+
+.formbox {
+    background-color: rgb(255, 255, 255);
+    border-top: 6px solid #b40404;
+    box-shadow: 0 10px 10px rgba(0, 0, 0, 0.5);
+    padding: 80px 20px 36px;
+    width: 355px;
+    position: relative;
+    z-index: 1;
+}
+
+.form-label {
+    color: #0f1a3b93;
+    font-size: 15px;
+    font-weight: bold;
+    font-family: 'Oswald', sans-serif;
+    display: block;
+    margin-bottom: 0;
+}
+
+.form-group {
+    margin-bottom: 18px;
+}
+
+.form-control {
+    width: 100%;
+    margin-top: 5px;
+    border-radius: 6px;
+    padding: 10px;
+    border: none;
+    background-color: rgba(75, 72, 72, 0.185);
+    font-family: 'Oswald', sans-serif;
+    font-size: 15px;
+    display: block;
+}
+
+.form-control:focus {
+    outline: 1px solid #000000;
+    box-shadow: none;
+}
+
+.form-control::placeholder {
+    color: #a0a0a0;
+    font-family: 'Oswald', sans-serif;
+}
+
+.btn {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+    background-color: #ad0808;
+    border: none;
+    font-family: 'Oswald', sans-serif;
+    color: white;
+    letter-spacing: .08em;
+    cursor: pointer;
+    margin-top: 6px;
+    border-radius: 4px;
+}
+
+.btn:hover {
+    background-color: #850404;
+    color: white;
+    transition: 0.3s;
+    box-shadow: 0 5px 10px rgba(252, 0, 0, 0.4);
+}
+
+.alert {
+    border-radius: 6px;
+    padding: .5rem .8rem;
+    font-size: .83rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-family: 'Oswald', sans-serif;
+}
+.alert-info    { background:#dff0ff; color:#0a4a7a; border:1px solid #b3d7f5; }
+.alert-danger  { background:#fde8eb; color:#8b0000; border:1px solid #f5b3bb; }
+.d-none { display: none !important; }
+
+.is-invalid {
+    outline: 1px solid #b40404 !important;
+}
+
+.form-check {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    margin-bottom: 16px;
+}
+.form-check-input {
+    width: 15px;
+    height: 15px;
+    accent-color: #b40404;
+    cursor: pointer;
+}
+.form-check-label {
+    font-family: 'Oswald', sans-serif;
+    font-size: .88rem;
+    color: #0f1a3b93;
+    cursor: pointer;
+}

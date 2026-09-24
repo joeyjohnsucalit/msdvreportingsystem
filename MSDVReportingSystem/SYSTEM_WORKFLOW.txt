@@ -1,0 +1,1263 @@
+==============================================================================
+                    MSDV REPORTING SYSTEM - PROGRAM WORKFLOW
+                              Version 1.0
+==============================================================================
+
+TABLE OF CONTENTS:
+1. System Overview
+2. System Architecture
+3. User Roles & Permissions
+4. Complete System Workflow
+5. Database & Technical Components
+6. Module Descriptions
+7. Key Features & Processes
+8. Security & Session Management
+
+==============================================================================
+1. SYSTEM OVERVIEW
+==============================================================================
+
+The MSDV Reporting System is a comprehensive web-based platform designed for
+institutional management of student discipline, violations reporting, and
+appeals processing. It enables multiple stakeholders (students, teachers,
+administrative staff) to participate in a structured workflow for reporting
+and managing student misconduct.
+
+Core Purpose:
+- Allow authorized staff to report student violations
+- Centralize violation records management
+- Track disciplinary actions and sanctions
+- Process student appeals for violations
+- Maintain comprehensive student records
+- Generate reports and analytics on violations
+
+Deployment Environment:
+- Server: Apache (XAMPP)
+- Database: MySQL
+- Language: PHP
+- Frontend: HTML, CSS, JavaScript, Bootstrap
+- Database: PDO (PHP Data Objects)
+
+==============================================================================
+2. SYSTEM ARCHITECTURE
+==============================================================================
+
+Directory Structure:
+/ (Root)
+├── index.html                    (Login Page Entry Point)
+├── login.php                     (Authentication Handler)
+├── logout.php                    (Session Termination)
+├── manifest.json                 (PWA Manifest)
+├── service-worker.js             (PWA Service Worker)
+│
+├── admin/                        (Admin Dashboard & Management)
+│   ├── dashboard.php             (Admin Overview & Analytics)
+│   ├── disciplinary-action.php   (Manage Sanctions & Status)
+│   ├── student-appeals.php       (Review & Process Appeals)
+│   ├── student-records.php       (Manage Student Data)
+│   ├── user-management.php       (Add/Edit/Delete Users)
+│   ├── violation-records.php     (View All Violations)
+│   ├── risk-level.php            (Risk Assessment)
+│   ├── change-admin-password.php (Password Management)
+│   ├── data-backup.php           (Database Backups)
+│   └── ajax/                     (AJAX Handlers)
+│       ├── chart-data.php        (Dashboard Statistics)
+│       ├── get-courses.php       (Course List)
+│       ├── notifications.php     (Notification Handler)
+│       └── student-violations.php (Violation Query)
+│
+├── student/                      (Student Portal)
+│   └── dashboard.php             (Student Dashboard, Appeals, Records)
+│
+├── teacher/                      (Teacher Reporting Module)
+│   ├── report-form.php           (Submit Violations)
+│   └── my-reports.php            (View Submitted Reports)
+│
+├── csu/                          (Course Supervision Unit)
+│   ├── report-form.php           (Submit Violations)
+│   └── my-reports.php            (View Submitted Reports)
+│
+├── jassu/                        (JASSU Department)
+│   ├── report-form.php           (Submit Violations)
+│   └── my-reports.php            (View Submitted Reports)
+│
+├── db/                           (Database & Auth)
+│   ├── connection.php            (Database Connection)
+│   └── auth_guard.php            (Authentication Guard)
+│
+├── assets/                       (Static Resources)
+│   ├── css/                      (Stylesheets)
+│   ├── images/                   (Images & Logos)
+│   └── js/                       (JavaScript Files)
+│
+└── uploads/                      (Uploaded Evidence Files)
+
+==============================================================================
+3. USER ROLES & PERMISSIONS
+==============================================================================
+
+3.1 ADMINISTRATOR (admin)
+    Location: /admin/
+    Permissions:
+    • Full system access
+    • View all students and violations
+    • Manage disciplinary actions
+    • Review and process student appeals
+    • Approve/Reject appeals
+    • Manage user accounts (add/edit/delete)
+    • Change password
+    • View analytics and reports
+    • Backup database
+    • Test risk scoring
+    • Modify all violations and records
+    
+    Dashboard: /admin/dashboard.php
+    Key Functions:
+    - View system statistics (total students, violations, pending cases)
+    - Monitor monthly violations trends
+    - Track disciplinary action status
+    - Receive notifications of new violations and appeals
+    
+3.2 STUDENT (student)
+    Location: /student/
+    Permissions:
+    • View own violations
+    • View disciplinary actions taken
+    • Submit appeals for violations
+    • Change password on first login
+    • View own student record
+
+    Dashboard: /student/dashboard.php
+    Key Features:
+    - View list of violations with details
+    - Check appeal status
+    - Submit new appeal with explanation
+    - View course and department information
+    - Change password if first login required
+    - Notification of appeal decisions
+    
+3.3 TEACHER (teacher)
+    Location: /teacher/
+    Permissions:
+    • Submit violation reports for students
+    • Upload evidence for violations
+    • View submitted reports
+    • Change password on first login
+
+    Workflow:
+    - Access /teacher/report-form.php to submit violations
+    - Select student ID and violation category
+    - Provide detailed description
+    - Upload photographic evidence (optional)
+    - System creates violation record
+    
+3.4 CSU - Course Supervision Unit (csu)
+    Location: /csu/
+    Permissions:
+    • Submit violation reports for students
+    • Upload evidence for violations
+    • View submitted reports
+    • Change password on first login
+
+    Workflow:
+    - Similar to Teacher role
+    - Can report violations across courses/departments
+    
+3.5 JASSU Department (jassu)
+    Location: /jassu/
+    Permissions:
+    • Submit violation reports for students
+    • Upload evidence for violations
+    • View submitted reports
+    • Change password on first login
+
+    Workflow:
+    - Specific department oversight
+    - Report violations within jurisdiction
+
+==============================================================================
+4. COMPLETE SYSTEM WORKFLOW
+==============================================================================
+
+4.1 USER AUTHENTICATION FLOW
+─────────────────────────────
+
+1. User Access System
+   └─> Open index.html (Login Page)
+
+2. User Inputs Credentials
+   └─> Enter Username and Password
+   └─> Optional: Check "Remember Me"
+
+3. Credentials Submitted to login.php
+   └─> POST request to /login.php
+
+4. Server Authentication Logic
+   └─> Query database for username
+   └─> Verify hashed password
+   └─> IF invalid → Redirect to index.html with error
+   └─> IF valid → Continue to step 5
+
+5. Session Creation
+   └─> SET $_SESSION['user_id'] = user ID
+   └─> SET $_SESSION['username'] = username
+   └─> SET $_SESSION['full_name'] = full name
+   └─> SET $_SESSION['role'] = user role
+   └─> SET $_SESSION['is_first_login'] = first login flag
+
+6. Remember Me Feature (if checked)
+   └─> Generate remember_token (random hash)
+   └─> Store token in users table with expiration
+   └─> Set remember_token cookie (persistent)
+
+7. Role-Based Redirect
+   └─> IF role = 'admin' → /admin/dashboard.php
+   └─> IF role = 'student' → /student/dashboard.php
+   └─> IF role = 'teacher' → /teacher/report-form.php
+   └─> IF role = 'csu' → /csu/report-form.php
+   └─> IF role = 'jassu' → /jassu/report-form.php
+
+4.2 FIRST LOGIN PASSWORD CHANGE FLOW
+─────────────────────────────────────
+
+1. User Logs In First Time
+   └─> is_first_login = 1 in database
+
+2. Upon Landing in Assigned Area
+   └─> System detects first login flag
+   └─> Prompts user to change password immediately
+
+3. User Submits New Password
+   └─> Validates: Password matches confirmation
+   └─> Validates: Minimum 6 characters
+   └─> Hash new password using PASSWORD_DEFAULT
+
+4. Password Updated
+   └─> UPDATE users SET password=hashed
+   └─> UPDATE users SET is_first_login=0
+   └─> Clear remember_token cookie
+
+5. Session Destroyed & Redirect
+   └─> User session ends
+   └─> Redirect to login.php
+   └─> User logs in again with new password
+
+4.3 VIOLATION REPORTING WORKFLOW (Teacher/CSU/JASSU)
+────────────────────────────────────────────────────
+
+1. Staff Member Accesses Report Form
+   └─> Navigate to /teacher/report-form.php
+   └─> OR /csu/report-form.php
+   └─> OR /jassu/report-form.php
+
+2. Form Submitted with Violation Details
+   Select student ID:
+   └─> Verify student exists in database
+   └─> IF not found → Display error, request valid ID
+
+3. Report Details Entered
+   └─> Category: (Minor/Major)
+   └─> Violation Type: (specific violation)
+   └─> Description: (detailed explanation)
+   └─> Evidence: (optional photo upload)
+
+4. Upload Evidence (Optional)
+   └─> IF evidence file selected
+   └─> Validate file (check type, size)
+   └─> Move file to /uploads/directory
+   └─> Store filename in database
+
+5. Violation Record Created
+   INSERT INTO violations
+   └─> student_id
+   └─> violation (violation type)
+   └─> description
+   └─> category (minor/major)
+   └─> evidence_path (if uploaded)
+   └─> submitted_by (staff member ID)
+   └─> date_submitted (current date/time)
+   └─> status = 'pending'
+
+6. Notification Generated
+   └─> Send notification to Admin
+   └─> Message: "New violation report from [Staff Name]"
+   └─> Link: /admin/violation-records.php
+
+7. Confirmation Displayed
+   └─> Show success message
+   └─> Provide violation reference number
+
+4.4 STUDENT VIOLATION VIEWING FLOW
+──────────────────────────────────
+
+1. Student Logs Into Dashboard
+   └─> Navigate to /student/dashboard.php
+
+2. System Fetches Student's Violations
+   └─> Query violations table WHERE student_id = current_student
+   └─> Join with disciplinary_actions table
+   └─> Join with appeals table
+
+3. Violations Displayed to Student
+   For each violation, show:
+   └─> Violation type
+   └─> Category (minor/major)
+   └─> Date reported
+   └─> Description
+   └─> Evidence (if available)
+   └─> Disciplinary action status (if assigned)
+   └─> Sanction details (if applicable)
+   └─> Appeal status (if appeal exists)
+
+4.5 DISCIPLINARY ACTION WORKFLOW (Admin)
+────────────────────────────────────────
+
+1. Admin Accesses Violation Records
+   └─> Navigate to /admin/violation-records.php
+   └─> View pending violations requiring action
+
+2. Admin Initiates Disciplinary Action
+   └─> Select a violation
+   └─> Review violation details and evidence
+   └─> Determine appropriate sanction
+
+3. Create Disciplinary Action
+   INSERT INTO disciplinary_actions
+   └─> violation_id
+   └─> student_id
+   └─> sanction (type/duration)
+   └─> status = 'pending'
+   └─> start_date = null (set when approved)
+   └─> end_date = null (set when completed)
+
+4. Admin Updates Status
+   Location: /admin/disciplinary-action.php
+   Status Flow (One-way only):
+   └─> pending → ongoing → completed
+
+   When status changed to 'ongoing':
+   └─> Set start_date = current date
+   └─> Update violations table status
+
+   When status changed to 'completed':
+   └─> Set end_date = current date
+   └─> Officially close the case
+
+5. Student Notified
+   └─> INSERT INTO notifications
+   └─> Message: "Your disciplinary case status updated to: [STATUS]"
+   └─> Link: /student/dashboard.php
+
+4.6 STUDENT APPEAL WORKFLOW
+──────────────────────────
+
+1. Student Reviews Violation
+   └─> Access /student/dashboard.php
+   └─> View violation they wish to appeal
+
+2. Student Submits Appeal
+   └─> Click "Appeal" button on violation
+   └─> Write detailed appeal explanation
+   └─> Submit appeal form
+
+3. System Validates
+   └─> Check if appeal already exists for this violation
+   └─> IF yes → Display error "Appeal already submitted"
+   └─> IF no → Continue
+
+4. Appeal Record Created
+   INSERT INTO appeals
+   └─> violation_id
+   └─> student_id
+   └─> explanation (student's reason for appeal)
+   └─> submitted_at = current timestamp
+   └─> status = 'pending'
+
+5. Admin Notified
+   └─> INSERT INTO notifications to admin
+   └─> Message: "Student [ID] submitted an appeal"
+   └─> Link: /admin/student-appeals.php
+
+6. Success Message
+   └─> Display confirmation
+   └─> Inform student appeal is under review
+
+4.7 ADMIN APPEAL REVIEW WORKFLOW
+─────────────────────────────────
+
+1. Admin Accesses Appeals Panel
+   └─> Navigate to /admin/student-appeals.php
+
+2. Admin Reviews Appeal
+   └─> View student name
+   └─> Review violation details
+   └─> Read student's appeal explanation
+   └─> Examine evidence
+
+3. Admin Makes Decision
+   
+   Option A: Approve Appeal
+   └─> Determine violation was unjustified
+   └─> Click "Approve" button
+   └─> System automatically:
+       ├─> UPDATE appeals SET status='approved'
+       ├─> DELETE FROM appeals (all for that violation)
+       ├─> DELETE FROM disciplinary_actions (for that violation)
+       ├─> DELETE FROM violations (completely remove)
+   └─> Send notification to student: "Appeal APPROVED. Violation removed."
+
+   Option B: Reject Appeal
+   └─> Determine violation was justified
+   └─> Click "Reject" button
+   └─> System:
+       ├─> UPDATE appeals SET status='rejected'
+   └─> Send notification to student: "Appeal REJECTED. Violation remains on record."
+
+4. Student Notification
+   └─> INSERT INTO notifications (student user)
+   └─> Message with appeal decision
+   └─> Link: /student/dashboard.php
+
+4.8 ADMIN DASHBOARD ANALYTICS FLOW
+──────────────────────────────────
+
+1. Admin Logs In
+   └─> Redirected to /admin/dashboard.php
+
+2. Dashboard Loads Data
+   Key Statistics Calculated:
+   └─> Total Students Count
+   └─> Total Violations Count
+   └─> Pending Disciplinary Cases
+   └─> Completed Cases
+   └─> Unread Notifications
+
+3. Charts Generated (via AJAX)
+   └─> Monthly violations trend
+   └─> Minor vs Major violations ratio
+   └─> Violations by category
+   └─> Violations by department
+   └─> Status distribution (pending/ongoing/completed)
+
+4. Notifications Displayed
+   └─> Fetch latest 20 notifications
+   └─> Display in notification panel
+   └─> Mark as read when clicked
+
+4.9 USER MANAGEMENT WORKFLOW (Admin Only)
+──────────────────────────────────────────
+
+1. Admin Accesses User Management
+   └─> Navigate to /admin/user-management.php
+
+2. Add New User
+   └─> Click "Add New User"
+   └─> Enter: Full Name, Username, Email, Password, Role
+   └─> Validate:
+       ├─> Username must be unique
+       ├─> Passwords must match
+   └─> INSERT INTO users
+   └─> Set is_first_login = 1 (force password change)
+
+3. Edit Existing User
+   └─> Select user
+   └─> Modify: Full Name, Username, Email, Role
+   └─> UPDATE users table
+
+4. Change User Password
+   └─> Select user
+   └─> Admin enters new password
+   └─> Validate passwords match
+   └─> Hash and UPDATE users.password
+
+5. Delete User
+   └─> Select user (must not be admin or student)
+   └─> Admin enters deletion password: "delete123"
+   └─> IF password correct → DELETE FROM users
+   └─> IF password incorrect → Show error
+
+4.10 STUDENT RECORDS MANAGEMENT
+───────────────────────────────
+
+1. Admin Accesses Student Records
+   └─> Navigate to /admin/student-records.php
+
+2. Search Students
+   └─> By student ID
+   └─> By name
+   └─> By department
+   └─> By course
+
+3. View Student Record
+   └─> Personal information
+   └─> Department and course
+   └─> Enrolled date
+   └─> Current status
+
+4. Manage Student Records
+   └─> Add new students
+   └─> Update information
+   └─> Deactivate accounts
+   └─> View violation history
+
+4.11 PASSWORD MANAGEMENT
+────────────────────────
+
+First Login Password Change:
+1. New user logs in
+2. System detects is_first_login = 1
+3. Mandatory password change modal
+4. User enters new password (min 6 chars)
+5. Password hashed and saved
+6. is_first_login set to 0
+
+Admin Password Change:
+1. Admin navigates to /admin/change-admin-password.php
+2. Enters current password
+3. Enters new password (min 6 chars)
+4. Confirms new password
+5. System validates current password
+6. Updates users.password
+
+Logout:
+1. User clicks Log Out
+2. Session destroyed
+3. remember_token cookie cleared
+4. Redirect to login page
+
+==============================================================================
+5. DATABASE & TECHNICAL COMPONENTS
+==============================================================================
+
+5.1 DATABASE TABLES OVERVIEW
+─────────────────────────────
+
+users
+├─ id (Primary Key)
+├─ full_name
+├─ username (Unique)
+├─ email
+├─ password (hashed)
+├─ role (admin, student, teacher, csu, jassu)
+├─ is_first_login (0/1)
+├─ remember_token
+├─ remember_token_expires
+└─ created_at
+
+students
+├─ student_id (Primary Key)
+├─ user_id (Foreign Key → users)
+├─ first_name
+├─ last_name
+├─ email
+├─ phone
+├─ course_id (Foreign Key → courses)
+├─ department_id (Foreign Key → departments)
+├─ enrollment_date
+├─ status (active/suspended/graduated)
+└─ created_at
+
+violations
+├─ id (Primary Key)
+├─ student_id (Foreign Key → students)
+├─ violation (violation type)
+├─ category (minor/major)
+├─ description
+├─ evidence_path (file location)
+├─ submitted_by (user ID)
+├─ date_submitted
+├─ status (pending/ongoing/completed)
+└─ created_at
+
+disciplinary_actions
+├─ id (Primary Key)
+├─ violation_id (Foreign Key → violations)
+├─ student_id (Foreign Key → students)
+├─ sanction (type of punishment)
+├─ status (pending/ongoing/completed)
+├─ start_date
+├─ end_date
+└─ created_at
+
+appeals
+├─ id (Primary Key)
+├─ violation_id (Foreign Key → violations)
+├─ student_id (Foreign Key → students)
+├─ explanation (student's reason)
+├─ submitted_at
+├─ status (pending/approved/rejected)
+└─ created_at
+
+notifications
+├─ id (Primary Key)
+├─ user_id (Foreign Key → users)
+├─ message
+├─ link
+├─ is_read (0/1)
+├─ created_at
+└─ updated_at
+
+courses
+├─ id (Primary Key)
+├─ code
+├─ name
+└─ description
+
+departments
+├─ id (Primary Key)
+├─ code
+├─ name
+└─ description
+
+5.2 CONNECTION DETAILS
+──────────────────────
+
+Database: msdvreportingsystem
+Host: localhost
+User: root
+Password: (empty)
+Driver: MySQL
+Port: 3306
+
+Connection Method: PDO (PHP Data Objects)
+Error Handling: PDO::ERRMODE_EXCEPTION
+Fetch Mode: PDO::FETCH_ASSOC
+
+5.3 AUTHENTICATION & SECURITY
+──────────────────────────────
+
+Session Management:
+- Session started automatically
+- Session ID stored in $_SESSION array
+- session_start() called at top of each page
+- Cache headers prevent backdating
+
+Password Security:
+- Passwords hashed using PASSWORD_DEFAULT (bcrypt)
+- Password verification with password_verify()
+- Minimum password length: 6 characters
+
+Token-Based Remember Me:
+- 30-day persistent login tokens
+- Random token generated on login
+- Token stored in database with expiration
+- Token validated on each visit
+
+Authorization:
+- auth_guard.php provides requireLogin() function
+- Role-specific access control validated
+- Unauthorized access redirects to login
+
+Cache Prevention:
+- HTTP headers disable browser cache
+- Pragma: no-cache
+- Cache-Control: no-store
+- Expires: past date
+- Prevents back button on protected pages
+
+5.4 FILE UPLOAD HANDLING
+────────────────────────
+
+Evidence Upload:
+- Location: /uploads/ directory
+- Allowed types: Image files
+- File validation on server-side
+- Files stored with timestamp + original name
+- Path stored in violations.evidence_path
+
+Upload Processing:
+1. File submitted in form
+2. Validate file exists and has content
+3. Generate unique file name
+4. Move to uploads directory
+5. Store path in database
+6. Return to form with confirmation
+
+==============================================================================
+6. MODULE DESCRIPTIONS
+==============================================================================
+
+6.1 ADMIN DASHBOARD
+───────────────────
+File: /admin/dashboard.php
+Purpose: Central admin hub with system overview
+Features:
+- Quick statistics cards (students, violations, cases)
+- Monthly violations chart
+- Minor vs Major violations breakdown
+- Violations by category
+- Violations by department
+- Status distribution pie chart
+- Notification panel (latest 20)
+- Unread notification count
+Uses AJAX to load chart data dynamically
+
+6.2 VIOLATION RECORDS
+─────────────────────
+File: /admin/violation-records.php
+Purpose: Comprehensive violation management
+Features:
+- Search violations by student/category
+- Filter by status
+- Detailed violation information
+- Evidence preview
+- Submitted by information
+- Quick action buttons
+- Bulk operations
+
+6.3 DISCIPLINARY ACTIONS
+────────────────────────
+File: /admin/disciplinary-action.php
+Purpose: Manage sanctions and their lifecycle
+Features:
+- View all disciplinary actions
+- Search by student name/ID
+- Filter by status
+- Status progression (pending → ongoing → completed)
+- Set start/end dates
+- Notify students of updates
+- Track action history
+Status flow is one-directional (cannot go backwards)
+
+6.4 STUDENT APPEALS
+───────────────────
+File: /admin/student-appeals.php
+Purpose: Review and process student appeals
+Features:
+- Display all appeals
+- Show student, violation, and appeal details
+- Approve/Reject buttons
+- Automatic record cleanup on approval
+- Notification system
+When approved:
+- Remove violation completely
+- Remove disciplinary action
+- Remove all related appeals
+- Notify student of decision
+
+6.5 STUDENT RECORDS
+───────────────────
+File: /admin/student-records.php
+Purpose: Manage student master data
+Features:
+- Search students
+- View student details
+- Add new students
+- Update student information
+- View enrollment status
+- Link to violation history
+
+6.6 USER MANAGEMENT
+───────────────────
+File: /admin/user-management.php
+Purpose: Manage system users
+Features:
+- Add new users (teachers, CSU, JASSU staff)
+- Edit user information
+- Change user passwords
+- Delete non-admin/student users
+- Deletion requires password: "delete123"
+- Manage student user accounts
+Separate tabs for:
+- Staff Users (teacher, csu, jassu)
+- Student Users
+
+6.7 CHANGE ADMIN PASSWORD
+──────────────────────────
+File: /admin/change-admin-password.php
+Purpose: Admin password management
+Features:
+- Verify current password
+- Enter and confirm new password
+- Password length validation
+- Secure password update
+- Clear remember tokens
+
+6.8 DATA BACKUP
+───────────────
+File: /admin/data-backup.php
+Purpose: Database backup and recovery
+Features:
+- Create database backups
+- Download backup files
+- Restore from previous backups
+- Backup scheduling (optional)
+
+6.9 RISK LEVEL
+──────────────
+File: /admin/risk-level.php
+Purpose: Student risk assessment
+Features:
+- Calculate student risk scores
+- View high-risk students
+- Track violation patterns
+- Predictive analytics
+- Department risk analysis
+
+6.10 STUDENT DASHBOARD
+──────────────────────
+File: /student/dashboard.php
+Purpose: Student-facing main interface
+Features:
+- Display all student violations
+- Show disciplinary actions
+- Appeal status tracking
+- Appeal submission interface
+- Student information display
+- Notification system
+- First login password change
+Key Actions:
+- Submit appeals with explanations
+- Change password
+- View complete violation record
+
+6.11 TEACHER REPORT FORM
+─────────────────────────
+File: /teacher/report-form.php
+Purpose: Teacher violation submission
+Features:
+- Student ID lookup
+- Violation category selection
+- Detailed violation description
+- Evidence upload
+- Submit confirmation
+- View submitted reports
+Also: /teacher/my-reports.php
+- View all submitted reports
+- Track status of submissions
+
+6.12 CSU REPORT FORM
+────────────────────
+File: /csu/report-form.php
+Purpose: Course Supervision Unit violation reporting
+Features: (Same as Teacher)
+- Student ID lookup
+- Violation category selection
+- Evidence upload
+Also: /csu/my-reports.php
+- Similar to teacher reports view
+
+6.13 JASSU REPORT FORM
+──────────────────────
+File: /jassu/report-form.php
+Purpose: JASSU department violation reporting
+Features: (Same as Teacher/CSU)
+Also: /jassu/my-reports.php
+- Similar reporting interface
+
+6.14 AJAX HANDLERS
+──────────────────
+Location: /admin/ajax/
+
+chart-data.php:
+- Returns chart data in JSON format
+- Uses for dashboard visualizations
+- Monthly trends, category breakdowns
+
+get-courses.php:
+- Returns list of available courses
+- Used for filtering and selection
+
+notifications.php:
+- Fetch unread notifications
+- Mark notifications as read
+- Real-time notification updates
+
+student-violations.php:
+- Query violations by student
+- Return violation data
+- Used for search results
+
+==============================================================================
+7. KEY FEATURES & PROCESSES
+==============================================================================
+
+7.1 NOTIFICATION SYSTEM
+───────────────────────
+Real-time notifications keep users informed:
+
+When New Violation Submitted:
+└─> Admin receives notification
+└─> Link: /admin/violation-records.php
+
+When Appeal Submitted:
+└─> Admin receives notification
+└─> Link: /admin/student-appeals.php
+
+When Disciplinary Status Updated:
+└─> Student receives notification
+└─> Describes status change
+└─> Link: /student/dashboard.php
+
+When Appeal Decided:
+└─> Student receives notification
+└─> Shows approved/rejected status
+└─> Explains consequences
+
+Notification Features:
+- Marked as read/unread
+- Ordered by date (newest first)
+- Quick links to relevant pages
+- Unread count badge
+
+7.2 SEARCH & FILTER CAPABILITIES
+─────────────────────────────────
+
+Admin can search and filter:
+Violations:
+- By student name/ID
+- By category (minor/major)
+- By status (pending/ongoing/completed)
+- By date range
+
+Disciplinary Actions:
+- By student name/ID
+- By status
+- By sanction type
+
+Appeals:
+- By student name/ID
+- By status (pending/approved/rejected)
+- By submission date
+
+Users:
+- By full name
+- By username
+- By role
+- By email
+
+Students:
+- By student ID
+- By name
+- By department
+- By course
+
+7.3 ROLE-BASED ACCESS CONTROL
+──────────────────────────────
+
+Every protected page includes:
+- Session validation
+- Role-specific access check
+- Automatic redirect if unauthorized
+
+Access Control Layers:
+1. Session check: Are you logged in?
+2. Role check: Do you have this role?
+3. Resource check: Is this your data?
+
+7.4 DATA INTEGRITY & CASCADING DELETES
+───────────────────────────────────────
+
+Violation Approval (When Appeal Approved):
+Automatically removes:
+- All appeals for that violation
+- Associated disciplinary actions
+- The violation itself
+
+This maintains referential integrity:
+- No orphaned records
+- Complete removal of dismissed violations
+- Clean data state
+
+7.5 EVIDENCE MANAGEMENT
+───────────────────────
+
+File Storage:
+- Location: /uploads/ directory
+- Naming: timestamp_originalname
+- Types: Images (jpg, png, gif)
+- Access: Only through authorized links
+
+Retrieval:
+- Path stored in violations table
+- Accessible through violation record
+- Admin can view evidence
+- Student can view evidence against them
+
+7.6 PASSWORD SECURITY
+─────────────────────
+
+Password Requirements:
+- Minimum 6 characters
+- Hashed with bcrypt (PASSWORD_DEFAULT)
+- Never stored in plain text
+- Verified using password_verify()
+
+Password Reset:
+- First-time users must change password
+- Forced modal on login
+- Cannot proceed without changing
+- remember_tokens cleared
+
+Admin Functions:
+- Can reset any user password
+- Can change own password
+- Requires current password verification
+
+7.7 REMEMBER ME FUNCTIONALITY
+─────────────────────────────
+
+Token-Based Persistent Login:
+1. User checks "Remember Me"
+2. System generates random token
+3. Token stored in users table
+4. Token also stored in cookie (30 days)
+5. On next visit, token auto-authenticates
+6. User session created automatically
+7. No login required
+
+Token Expiration:
+- Automatic database cleanup
+- Token invalidated if expired
+- require_token check on each visit
+
+7.8 VIOLATION LIFECYCLE
+───────────────────────
+
+Pending Status:
+- Just reported
+- Awaiting admin review
+- No sanction assigned yet
+
+Ongoing Status:
+- Admin approved sanction
+- Disciplinary action started
+- Start date recorded
+- Student serving consequences
+
+Completed Status:
+- Disciplinary action finished
+- End date recorded
+- Case closed (unless appealed)
+- Record maintained for history
+
+Appeal Status:
+- Can only appeal pending violations
+- Once approved, violation removed
+- Once rejected, must accept violation
+- No status change possible
+
+7.9 STATISTICS & REPORTING
+───────────────────────────
+
+Admin Dashboard Shows:
+- Total students count
+- Total violations count
+- Pending sanctions count
+- Completed cases count
+- Unread notifications count
+
+Charts Available:
+- Monthly violations trend
+- Violation category breakdown
+- Violations by department
+- Status distribution
+- Severity analysis
+
+Reports Accessible Via:
+- All users: /[role]/my-reports.php
+- Admin: Comprehensive analytics
+- Staff: Submitted reports only
+
+==============================================================================
+8. SECURITY & SESSION MANAGEMENT
+==============================================================================
+
+8.1 SESSION LIFECYCLE
+─────────────────────
+
+Session Start:
+- Initiated at login.php
+- $_SESSION populated with user data
+- remembered via cookie (if enabled)
+
+Session Duration:
+- Default PHP session timeout
+- Continue while browser open
+- Persistent across pages
+- Ended at logout
+
+Session Cleanup:
+- On logout: session_destroy()
+- On appeal: remember tokens cleared
+- On password change: tokens cleared
+- On credential fail: no session created
+
+8.2 AUTHENTICATION FLOW SECURITY
+─────────────────────────────────
+
+Login Process:
+1. Username validated in database
+2. Password hashed and compared
+3. No direct password comparison
+4. Failed attempts not logged (privacy)
+5. Generic error messages (prevent username enumeration)
+
+Remember Me Security:
+1. Random token generated (unguessable)
+2. Token expires after 30 days
+3. Token specific to user
+4. Token invalidated on:
+   - Password change
+   - Password reset
+   - Logout
+   - Appeal submission
+
+5. Token verified before session creation
+
+8.3 AUTHORIZATION CHECKS
+────────────────────────
+
+Every Protected Page:
+- Checks session exists
+- Validates user_id set
+- Confirms role matches requirement
+- Denies access if not authorized
+
+Admin-Specific Pages:
+- Require role='admin'
+- Student role explicitly denied
+- Redirect to login on failure
+
+Staff Roles (teacher/csu/jassu):
+- Share report-form.php
+- Array check for allowed roles
+- Each role has own directory
+
+Student-Specific:
+- Require role='student'
+- Can only see own violations
+- Cannot access admin areas
+
+8.4 CACHE PREVENTION HEADERS
+──────────────────────────────
+
+Every Protected Page Sends:
+- Cache-Control: no-store, no-cache, must-revalidate, max-age=0
+- Pragma: no-cache
+- Expires: Sat, 01 Jan 2000 00:00:00 GMT
+
+Purpose:
+- Prevent browser caching
+- Disable back button
+- Force fresh page load
+- Protect sensitive data
+
+Applied When:
+- User loads any protected page
+- AJAX requests
+- Redirect responses
+
+8.5 DATA VALIDATION
+───────────────────
+
+Input Validation:
+- trim() removes whitespace
+- isset() checks variables exist
+- Type casting for integers
+- Database prepared statements (prevent SQL injection)
+
+Prepared Statements:
+- All database queries use ?
+- Parameterized queries
+- User input separated from SQL
+- Protection against injection attacks
+
+8.6 SENSITIVE DATA PROTECTION
+──────────────────────────────
+
+Passwords:
+- Hashed with PASSWORD_DEFAULT
+- Never logged or displayed
+- Verified with password_verify()
+- Minimum 6 characters enforced
+
+Tokens:
+- Random generated (unguessable)
+- Stored hashed in database
+- Cookies set with session_set_cookie_params
+- Cleared on sensitive actions
+
+Student Data:
+- Student records private
+- Accessible only to student themselves
+- Admin can access for management
+- Staff can only submit violations
+
+Evidence Files:
+- Stored outside web root
+- Access controlled
+- Authentication required to view
+- Cannot be directly accessed
+
+==============================================================================
+WORKFLOW SUMMARY DIAGRAM
+==============================================================================
+
+┌─────────────────────────────────────────────────────────────────────────┐
+│                       SYSTEM ENTRY POINT                                │
+│                    index.html / login.php                               │
+└────────────────────────────┬────────────────────────────────────────────┘
+                             │
+                    ┌────────▼─────────┐
+                    │ Authentication   │
+                    │ Validation       │
+                    └────────┬─────────┘
+                             │
+            ┌────────────────┼────────────────┬──────────────────┬──────────┐
+            │                │                │                  │          │
+            ▼                ▼                ▼                  ▼          ▼
+        ┌───────┐        ┌──────────┐    ┌────────┐        ┌─────────┐  ┌─────────┐
+        │ Admin │        │ Student  │    │Teacher │        │  CSU    │  │ JASSU   │
+        └───┬───┘        └────┬─────┘    └───┬────┘        └────┬────┘  └────┬────┘
+            │                 │              │                  │            │
+            │          ┌──────▼──────┐      │      ┌───────────┴────────────┤
+            │          │   Dashboard │      │      │                        │
+            │          │  (violations)│     │      └────────────────┬───────┘
+            │          └──────┬──────┘      │                       │
+            │                 │      ┌──────▼────────┐              │
+            │                 │      │  Report       │◄─────────────┘
+            │                 │      │  Form         │
+            │         ┌───────▼─────▼──────┬─────────┘
+            │         │                    │
+            │    ┌────▼─────┐       ┌─────▼────┐
+            │    │ Violation │       │ Appeal   │
+            │    │ Record    │       │ Submitted│
+            │    │ Created   │       │          │
+            │    └────┬──────┘       └─────┬────┘
+            │         │                    │
+            │    ┌────▼──────────────────────┴──────┐
+            │    │   Admin Review                    │
+            │    │   & Analysis                      │
+            │    └────┬──────────────────────────────┘
+            │         │
+            │┌────────┼──────────────┐
+            ││        │              │
+    ┌───────▼─┴────────▼────┐    ┌──▼────────────┐
+    │ Disciplinary Action   │    │ Appeal Review │
+    │  (Sanction Assignment) │    │ (Approve/    │
+    └───────┬────────────────┘    │  Reject)     │
+            │                     └──┬───────────┘
+            │                        │
+        ┌───▼───────┐            ┌──▼────────┐
+        │ Update    │            │ Decision  │
+        │ Status    │            │ Made      │
+        │ (pending→ │            │           │
+        │ ongoing→  │            │ Violation│
+        │ completed)│            │ Removed/ │
+        └───┬───────┘            │ Upheld   │
+            │                    └──┬───────┘
+            │                       │
+        ┌───▼────────────────────────▼────┐
+        │   Student Notification           │
+        │   (Status Update / Appeal        │
+        │    Decision)                     │
+        └────────────────────────────────┘
+
+==============================================================================
+END OF SYSTEM WORKFLOW DOCUMENTATION
+==============================================================================
+
+Document Version: 1.0
+Last Updated: August 31, 2026
+System Name: MSDV Reporting System (v1.0)

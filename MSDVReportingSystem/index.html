@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate, max-age=0">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>MSDV Reporting System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="assets/css/login.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#081F5D">
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js');
+}
+</script>
+</head>
+<body>
+
+<div class="wrapper">
+
+    <div class="mcclogo">
+        <img src="assets/images/mccLogo.png" alt="MCC Logo" class="loginlogo">
+    </div>
+
+    <div class="formbox">
+
+        <div id="logoutBox" class="alert alert-info d-none">
+            You have been logged out successfully.
+        </div>
+
+        <div id="errorBox" class="alert alert-danger d-none">
+            <span id="errorText"></span>
+        </div>
+
+        <form method="POST" action="login.php">
+
+            <div class="form-group">
+                <label class="form-label" for="usernameInput">USERNAME</label>
+                <input type="text" name="username" id="usernameInput"
+                       class="form-control" placeholder="Enter your username" required autocomplete="username">
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="passwordInput">PASSWORD</label>
+                <input type="password" name="password" id="passwordInput"
+                       class="form-control" placeholder="Enter your password" required autocomplete="current-password">
+            </div>
+            <button type="submit" class="btn">SIGN IN</button>
+
+        </form>
+    </div>
+
+</div>
+
+<script>
+(function () {
+    const params = new URLSearchParams(window.location.search);
+
+    const err = params.get('error');
+    if (err) {
+        document.getElementById('errorText').textContent = decodeURIComponent(err);
+        document.getElementById('errorBox').classList.remove('d-none');
+        document.getElementById('usernameInput').classList.add('is-invalid');
+        document.getElementById('passwordInput').classList.add('is-invalid');
+    }
+
+    if (params.get('logged_out') === '1') {
+        document.getElementById('logoutBox').classList.remove('d-none');
+    }
+
+    if (err || params.get('logged_out')) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    function getCookie(name) {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const c = cookies[i].trim();
+            if (c.startsWith(name + '=')) {
+                return decodeURIComponent(c.substring(name.length + 1));
+            }
+        }
+        return null;
+    }
+
+    const savedUsername = getCookie('remember_user');
+    if (savedUsername) {
+        document.getElementById('usernameInput').value = savedUsername;
+        document.getElementById('rememberMe').checked  = true;
+        document.getElementById('passwordInput').focus();
+    }
+
+    ['usernameInput', 'passwordInput'].forEach(function(id) {
+        document.getElementById(id).addEventListener('input', function() {
+            this.classList.remove('is-invalid');
+            document.getElementById('errorBox').classList.add('d-none');
+        });
+    });
+})();
+</script>
+</body>
+</html>
