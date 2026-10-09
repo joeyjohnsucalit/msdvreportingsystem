@@ -3,14 +3,22 @@
     padding: 0;
     box-sizing: border-box;
 }
+
 html {
     overflow: hidden;
 }
+
 body {
     background:
-        linear-gradient(180deg,rgba(6, 18, 56, 0.92) 0%,rgba(10, 29, 77, 0.80) 45%,rgba(6, 18, 56, 0.96) 100%),
+        linear-gradient(
+            180deg,
+            rgba(6, 18, 56, 0.92) 0%,
+            rgba(10, 29, 77, 0.80) 45%,
+            rgba(6, 18, 56, 0.96) 100%
+        ),
         url("../images/mcc.jpeg") center / cover no-repeat,
         #0a1d4d;
+
     background-attachment: fixed;
     width: 100%;
     min-height: 100vh;
@@ -28,9 +36,8 @@ body {
 }
 
 .mcclogo {
-    background: #091a47;
     border-radius: 50%;
-    margin-bottom: -70px;
+    margin-bottom: -80px;
     z-index: 2;
     position: relative;
     display: flex;
@@ -39,7 +46,7 @@ body {
 }
 
 .loginlogo {
-    border: 5px solid #091a47;
+
     border-radius: 100%;
     width: 155px;
     height: 155px;
@@ -47,10 +54,10 @@ body {
 }
 
 .formbox {
-    background-color: rgb(255, 255, 255);
-    border-top: 6px solid #b40404;
+    background-color: #ffffff;
+    border-top: 3px solid #b40404;
     box-shadow: 0 10px 10px rgba(0, 0, 0, 0.5);
-    padding: 80px 20px 36px;
+    padding: 80px 20px 20px;
     width: 355px;
     position: relative;
     z-index: 1;
@@ -112,19 +119,47 @@ body {
     box-shadow: 0 5px 10px rgba(252, 0, 0, 0.4);
 }
 
-.alert {
-    border-radius: 6px;
-    padding: .5rem .8rem;
-    font-size: .83rem;
-    margin-bottom: 1rem;
+/* Fixed message area below the Sign In button */
+.message-slot {
+    width: 100%;
+    min-height: 0;
+    margin-top: 8px;
     display: flex;
     align-items: center;
-    gap: .5rem;
-    font-family: 'Oswald', sans-serif;
+    justify-content: center;
 }
-.alert-info    { background:#dff0ff; color:#0a4a7a; border:1px solid #b3d7f5; }
-.alert-danger  { background:#fde8eb; color:#8b0000; border:1px solid #f5b3bb; }
-.d-none { display: none !important; }
+
+/* Error and logout messages */
+.alert {
+    width: 100%;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 13px;
+    margin-bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'Oswald', sans-serif;
+    overflow-wrap: anywhere;
+}
+
+
+
+.alert-info {
+    background: #dff0ff;
+    color: #0a4a7a;
+    border: 1px solid #b3d7f5;
+}
+
+.alert-danger {
+    background: #fde8eb;
+    color: #8b0000;
+    border: 1px solid #f5b3bb;
+}
+
+.d-none {
+    display: none !important;
+}
 
 .is-invalid {
     outline: 1px solid #b40404 !important;
@@ -136,12 +171,14 @@ body {
     gap: .45rem;
     margin-bottom: 16px;
 }
+
 .form-check-input {
     width: 15px;
     height: 15px;
     accent-color: #b40404;
     cursor: pointer;
 }
+
 .form-check-label {
     font-family: 'Oswald', sans-serif;
     font-size: .88rem;
