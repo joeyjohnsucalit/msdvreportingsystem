@@ -1,0 +1,1090 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>MSDV | MCC Student Violation Reporting System</title>
+
+<link rel="icon" href="assets/images/mccLogo.png">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<style>
+:root {
+    --navy: #0a1d4d;
+    --navy-2: #0e2760;
+    --navy-3: #16337a;
+    --red: #e03a3e;
+    --gold: #e8b21c;
+    --blue: #2f6bff;
+    --bg: #f4f6fb;
+    --card: #fff;
+    --line: #e3e8f2;
+    --ink: #0f1b3d;
+    --mute: #6b7690;
+    --green: #16a34a;
+    --orange: #d97706;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+::-webkit-scrollbar {
+    display: none;
+}
+html {
+    scroll-behavior: auto;
+    scroll-padding-top: 72px;
+    scroll-snap-type: none;
+}
+
+body {
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.6;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+:focus-visible {
+    outline: 3px solid var(--gold);
+    outline-offset: 3px;
+}
+
+/* TOP BAR */
+.bar {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 10;
+    height: 64px;
+    background: var(--navy);
+    border-bottom: 3px solid var(--red);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 clamp(16px, 4vw, 48px);
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 700;
+}
+
+.brand small {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    color: #9fb0d8;
+    line-height: 1.2;
+}
+
+.logo {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--navy-3);
+    border: 2px solid #2a4796;
+    display: grid;
+    place-items: center;
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--gold);
+    flex: none;
+    overflow: hidden;
+}
+
+.logo img,
+.seal img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.bar nav {
+    display: flex;
+    gap: 8px;
+    margin-right: clamp(12px, 3vw, 40px);
+}
+
+.bar nav a {
+    color: #cdd8f3;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 8px;
+}
+
+.bar nav a:hover {
+    background: var(--navy-2);
+    color: #fff;
+}
+
+.bar nav a.cta {
+    background: var(--red);
+    color: #fff;
+}
+
+.bar nav a.cta:hover {
+    background: #c92f33;
+}
+
+.brand span {
+    color: #fff;
+}
+
+/* HERO */
+.hero {
+    --hero-img: url("assets/images/mcc.jpeg");
+    min-height: 100svh;
+    background:
+        linear-gradient(
+            180deg,
+            rgba(6,18,56,.92) 0%,
+            rgba(10,29,77,.80) 45%,
+            rgba(6,18,56,.96) 100%
+        ),
+        var(--hero-img) center/cover no-repeat,
+        var(--navy);
+    background-attachment: scroll, fixed, scroll;
+    color: #fff;
+    display: grid;
+    place-items: center;
+    text-align: center;
+    padding: 96px 20px 64px;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 4px;
+    background: var(--red);
+}
+
+.hero-in {
+    max-width: 760px;
+}
+
+.seal {
+    width: 96px;
+    height: 96px;
+    margin: 0 auto 24px;
+    border-radius: 50%;
+    background: var(--navy-2);
+    border: 3px solid #2a4796;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    font-size: 26px;
+    color: var(--gold);
+    box-shadow: 0 0 0 8px rgba(47,107,255,.12);
+    overflow: hidden;
+}
+
+.hero h1 {
+    font-size: clamp(3rem, 11vw, 6.5rem);
+    font-weight: 800;
+    letter-spacing: -.04em;
+    line-height: 1;
+}
+
+.hero h2 {
+    margin-top: 14px;
+    font-size: clamp(1rem, 2.6vw, 1.4rem);
+    font-weight: 500;
+    color: #b9c7ec;
+    max-width: 34ch;
+    margin-inline: auto;
+}
+
+.btns {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 36px;
+}
+
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 150px;
+    padding: 14px 28px;
+    border-radius: 12px;
+    font: 700 16px inherit;
+    font-family: inherit;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: transform .15s, background .15s;
+}
+
+.btn:active {
+    transform: scale(.97);
+}
+
+.btn.primary {
+    background: var(--red);
+    color: #fff;
+}
+
+.btn.primary:hover {
+    background: #c92f33;
+}
+
+.btn.ghost {
+    background: transparent;
+    color: #fff;
+    border-color: #3a56a3;
+}
+
+.btn.ghost:hover {
+    background: var(--navy-2);
+}
+
+/* ABOUT */
+section.about {
+    padding: clamp(56px, 9vw, 104px) clamp(16px, 4vw, 48px);
+    scroll-margin-top: 64px;
+}
+
+.wrap {
+    max-width: 1100px;
+    margin: auto;
+}
+
+.kicker {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--gold);
+    letter-spacing: .08em;
+}
+
+.about h3 {
+    font-size: clamp(1.7rem, 4vw, 2.6rem);
+    letter-spacing: -.02em;
+    line-height: 1.15;
+    margin: 6px 0 10px;
+}
+
+.lead {
+    color: var(--mute);
+    max-width: 60ch;
+}
+
+/* TABS */
+.tabs {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin: 36px 0 18px;
+}
+
+.tab {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
+    text-align: left;
+    cursor: pointer;
+    font-family: inherit;
+    color: var(--ink);
+    transition: border-color .15s, box-shadow .15s;
+}
+
+.tab b {
+    display: block;
+    font-size: 15px;
+}
+
+.tab span {
+    font-size: 12.5px;
+    color: var(--mute);
+}
+
+.tab:hover {
+    border-color: #b9c7ec;
+}
+
+.tab[aria-selected="true"] {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(47,107,255,.15);
+    background: #f3f7ff;
+}
+
+/* PANELS */
+.panel {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: clamp(18px, 3vw, 32px);
+    display: none;
+}
+
+.panel.on {
+    display: block;
+    animation: in .35s ease;
+}
+
+@keyframes in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.panel h4 {
+    font-size: 1.25rem;
+    margin-bottom: 4px;
+}
+
+.panel > p {
+    color: var(--mute);
+    margin-bottom: 22px;
+    max-width: 62ch;
+}
+
+.chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 22px;
+}
+
+.chip {
+    background: #eef3ff;
+    color: var(--navy-3);
+    font-size: 12.5px;
+    font-weight: 700;
+    padding: 5px 12px;
+    border-radius: 99px;
+}
+
+/* LISTS */
+.cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.list {
+    list-style: none;
+    display: grid;
+    gap: 10px;
+}
+
+.list li {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    font-size: 14.5px;
+}
+
+.list i {
+    font-style: normal;
+    flex: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    background: var(--navy);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    display: grid;
+    place-items: center;
+}
+
+.list em {
+    font-style: normal;
+    color: var(--mute);
+    display: block;
+    font-size: 13px;
+}
+
+/* MOCK DEMO */
+.mock {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 18px;
+}
+
+.mock h5 {
+    font-size: 13px;
+    color: var(--mute);
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.field {
+    margin-bottom: 12px;
+}
+
+.field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--mute);
+    margin-bottom: 4px;
+}
+
+.field div {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 14px;
+    min-height: 42px;
+}
+
+.seg {
+    display: flex;
+    gap: 8px;
+}
+
+.seg button {
+    flex: 1;
+    padding: 10px;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: #fff;
+    font: 600 14px inherit;
+    font-family: inherit;
+    cursor: pointer;
+    color: var(--ink);
+}
+
+.seg button.minor.on {
+    background: #fff7e6;
+    border-color: var(--orange);
+    color: var(--orange);
+}
+
+.seg button.major.on {
+    background: #fff0f0;
+    border-color: var(--red);
+    color: var(--red);
+}
+
+.evid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.evid div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    font-size: 12.5px;
+    color: var(--mute);
+    border-style: dashed;
+}
+
+.sign {
+    height: 52px;
+    border-radius: 10px;
+    background: #fff;
+    border: 1px dashed #b9c7ec;
+    position: relative;
+}
+
+.sign svg {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.sign path {
+    fill: none;
+    stroke: var(--navy-3);
+    stroke-width: 2.5;
+    stroke-linecap: round;
+    stroke-dasharray: 300;
+    stroke-dashoffset: 300;
+}
+
+.panel.on .sign path {
+    animation: draw 2.2s .3s ease forwards;
+}
+
+@keyframes draw {
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+.verify {
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--green);
+}
+
+.dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--green);
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.stat {
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px;
+}
+
+.stat small {
+    font-size: 11px;
+    color: var(--mute);
+    font-weight: 600;
+}
+
+.stat b {
+    display: block;
+    font-size: 28px;
+    line-height: 1.1;
+}
+
+.row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    background: #fff;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 13.5px;
+    margin-bottom: 8px;
+}
+
+.tag {
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 99px;
+}
+
+.tag.minor {
+    background: #fff7e6;
+    color: var(--orange);
+}
+
+.tag.major {
+    background: #fff0f0;
+    color: var(--red);
+}
+
+.tag.pend {
+    background: #eef3ff;
+    color: var(--blue);
+}
+
+/* STEPS */
+.steps {
+    max-width: 680px;
+    margin: auto;
+}
+
+@media (min-width: 769px) {
+    .steps {
+        max-width: none;
+        grid-template-columns: 1fr 1fr;
+        grid-auto-flow: row dense;
+        gap: 14px;
+    }
+
+    .steps li:nth-child(4n+3) {
+        grid-column: 2;
+    }
+
+    .steps li:nth-child(4n+4) {
+        grid-column: 1;
+    }
+
+    .steps li {
+        height: 100%;
+        align-items: center;
+        padding: 16px;
+    }
+}
+
+/* FLOW STRIP */
+.flow {
+    margin-top: 44px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    counter-reset: s;
+}
+
+.flow div {
+    background: var(--navy);
+    color: #fff;
+    border-radius: 14px;
+    padding: 18px;
+    font-size: 14px;
+    position: relative;
+}
+
+.flow b {
+    display: block;
+    color: var(--gold);
+    margin-bottom: 4px;
+}
+
+.flow span {
+    color: #b9c7ec;
+    font-size: 13px;
+}
+
+/* FOOTER */
+footer {
+    background: var(--navy);
+    color: #9fb0d8;
+    text-align: center;
+    padding: 10px 16px;
+    font-size: 13px;
+    border-top: 3px solid var(--red);
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+    .hero {
+        background-attachment: scroll;
+        background-position: center, 60% center, center;
+    }
+
+    .tabs {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .cols {
+        grid-template-columns: 1fr;
+    }
+
+    .flow {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 520px) {
+    .brand small {
+        display: none;
+    }
+
+    .bar nav a:not(.cta) {
+        display: none;
+    }
+
+    .tabs,
+    .flow {
+        grid-template-columns: 1fr;
+    }
+
+    .btn {
+        width: 100%;
+    }
+
+    .btns {
+        max-width: 320px;
+        margin-inline: auto;
+    }
+}
+
+@media (max-width: 768px) {
+    .about .wrap,
+    .tab,
+    .panel,
+    .flow div {
+        text-align: center;
+    }
+
+    .lead {
+        margin-inline: auto;
+    }
+
+    .chips {
+        justify-content: center;
+    }
+
+    .list li {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+
+    .mock h5,
+    .field label,
+    .stat {
+        text-align: center;
+    }
+
+    .mock .row {
+        flex-direction: column;
+        gap: 6px;
+        text-align: center;
+    }
+
+    .verify {
+        justify-content: center;
+    }
+
+    .panel > p {
+        margin-inline: auto;
+    }
+
+    .bar nav {
+        margin-right: 14px;
+    }
+
+    .rv {
+        text-align: left;
+    }
+
+    .rv-s {
+        margin-inline: 0 !important;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .panel.on {
+        animation: none;
+    }
+
+    .panel.on .sign path {
+        animation: none;
+        stroke-dashoffset: 0;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header class="bar">
+    <a class="brand" href="#top">
+        <div class="logo">
+            <img src="assets/images/mccLogo.png" alt="MCC logo">
+        </div>
+        <div>
+            <span>MSDV</span>
+            <small>MCC Student Violation System</small>
+        </div>
+    </a>
+
+    <nav>
+        <a href="#about">About</a>
+        <a class="cta" href="login.html">Login</a>
+    </nav>
+</header>
+
+<main id="top">
+
+    <section class="hero">
+        <div class="hero-in">
+            <div class="seal">
+                <img src="assets/images/mccLogo.png" alt="MCC logo">
+            </div>
+
+            <h1>MSDV</h1>
+            <h2>MCC Student Violation Reporting System</h2>
+
+            <div class="btns">
+                <a class="btn primary" href="login.html">Login</a>
+                <button class="btn ghost" id="aboutBtn" type="button">About</button>
+            </div>
+        </div>
+    </section>
+
+    <section class="about" id="about">
+        <div class="wrap">
+
+            <p class="kicker">HOW IT WORKS</p>
+            <h3>One system, four kinds of accounts</h3>
+            <p class="lead">Pick an account type to see what that user can do inside MSDV.</p>
+
+            <div class="tabs" role="tablist" aria-label="Account types">
+
+                <button class="tab" role="tab" aria-selected="true" aria-controls="p-saso" id="t-saso">
+                    <b>SASO</b>
+                    <span>Admin</span>
+                </button>
+
+                <button class="tab" role="tab" aria-selected="false" aria-controls="p-non" id="t-non">
+                    <b>Non-Teaching Staff</b>
+                    <span>J.O, Nurse, CSU, JASSU</span>
+                </button>
+
+                <button class="tab" role="tab" aria-selected="false" aria-controls="p-teach" id="t-teach">
+                    <b>Teaching Staff</b>
+                    <span>Instructor</span>
+                </button>
+
+                <button class="tab" role="tab" aria-selected="false" aria-controls="p-stu" id="t-stu">
+                    <b>Student</b>
+                    <span>Dashboard</span>
+                </button>
+
+            </div>
+
+            <!-- SASO ACCOUNT -->
+            <div class="panel on" id="p-saso" role="tabpanel" aria-labelledby="t-saso">
+                <h4>SASO holds the Admin Panel</h4>
+                <p>The Student Affairs and Services Office verifies every report and manages the whole system.</p>
+
+                <ol class="list steps">
+                    <li><i>1</i><div>Review incoming reports<em>New reports from staff and students appear as pending</em></div></li>
+                    <li><i>2</i><div>Verify each report<em>Check the student ID, face capture, evidence and signature</em></div></li>
+                    <li><i>3</i><div>Record the violation<em>Verified reports are saved as minor or major in the student's record</em></div></li>
+                    <li><i>4</i><div>Apply disciplinary action<em>Set the action and the student's risk level</em></div></li>
+                    <li><i>5</i><div>Handle student appeals<em>Review and answer appeals sent by students</em></div></li>
+                    <li><i>6</i><div>Manage the system<em>Student records, user accounts and data backup</em></div></li>
+                </ol>
+            </div>
+
+            <!-- NON-TEACHING STAFF -->
+            <div class="panel" id="p-non" role="tabpanel" aria-labelledby="t-non" hidden>
+                <h4>Non-teaching staff report violations</h4>
+                <p>J.O, Nurse, CSU and JASSU staff use the same reporting page as instructors.</p>
+
+                <div class="chips">
+                    <span class="chip">J.O</span>
+                    <span class="chip">Nurse</span>
+                    <span class="chip">CSU</span>
+                    <span class="chip">JASSU</span>
+                </div>
+
+                <ol class="list steps">
+                    <li><i>1</i><div>Log in to your staff account<em>Teaching and non-teaching accounts share the same page</em></div></li>
+                    <li><i>2</i><div>Enter the student ID<em>Find the student you are reporting</em></div></li>
+                    <li><i>3</i><div>Choose Minor or Major<em>Pick the category of the violation</em></div></li>
+                    <li><i>4</i><div>Select the violation<em>The list changes depending on the category</em></div></li>
+                    <li><i>5</i><div>Add a description<em>Explain what happened</em></div></li>
+                    <li><i>6</i><div>Add supporting evidence<em>Upload an image or take a photo as evidence</em></div></li>
+                    <li><i>7</i><div>Capture the face and signature<em>Used by SASO to verify the report</em></div></li>
+                    <li><i>8</i><div>Submit the report<em>The report goes to SASO as pending</em></div></li>
+                </ol>
+            </div>
+
+            <!-- TEACHING STAFF -->
+            <div class="panel" id="p-teach" role="tabpanel" aria-labelledby="t-teach" hidden>
+                <h4>Instructors report violations</h4>
+                <p>Teaching staff have the same account page as non-teaching staff, so every report follows the same steps.</p>
+
+                <div class="chips">
+                    <span class="chip">Instructor</span>
+                </div>
+
+                <ol class="list steps">
+                    <li><i>1</i><div>Log in to your staff account<em>Teaching and non-teaching accounts share the same page</em></div></li>
+                    <li><i>2</i><div>Enter the student ID<em>Find the student you are reporting</em></div></li>
+                    <li><i>3</i><div>Choose Minor or Major<em>Pick the category of the violation</em></div></li>
+                    <li><i>4</i><div>Select the violation<em>The list changes depending on the category</em></div></li>
+                    <li><i>5</i><div>Add a description<em>Explain what happened</em></div></li>
+                    <li><i>6</i><div>Add supporting evidence<em>Upload an image or take a photo as evidence</em></div></li>
+                    <li><i>7</i><div>Capture the face and signature<em>Used by SASO to verify the report</em></div></li>
+                    <li><i>8</i><div>Submit the report<em>The report goes to SASO as pending</em></div></li>
+                </ol>
+            </div>
+
+            <!-- STUDENT ACCOUNT -->
+            <div class="panel" id="p-stu" role="tabpanel" aria-labelledby="t-stu" hidden>
+                <h4>Students see their own record</h4>
+                <p>Students check their violations and count, appeal them, and can report a fellow student.</p>
+
+                <ol class="list steps">
+                    <li><i>1</i><div>Log in to your student account<em>Open your own dashboard</em></div></li>
+                    <li><i>2</i><div>See your violation count<em>Total, minor and major violations at a glance</em></div></li>
+                    <li><i>3</i><div>Check your violation records<em>Each shows the type, date, status and disciplinary action</em></div></li>
+                    <li><i>4</i><div>Submit an appeal<em>Appeal a violation you disagree with</em></div></li>
+                    <li><i>5</i><div>Report a fellow student<em>Submit a report against a student who violates</em></div></li>
+                </ol>
+            </div>
+
+            <!-- WORKFLOW -->
+            <div class="flow">
+                <div>
+                    <b>Staff or student reports</b>
+                    <span>Enter the student ID and details</span>
+                </div>
+
+                <div>
+                    <b>SASO verifies</b>
+                    <span>Checks face capture, evidence and signature</span>
+                </div>
+
+                <div>
+                    <b>Action is taken</b>
+                    <span>Disciplinary action and risk level are set</span>
+                </div>
+
+                <div>
+                    <b>Student is informed</b>
+                    <span>The record shows on the student dashboard</span>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+</main>
+
+<footer>
+    &copy; <span id="yr"></span> MSDV &middot; MCC Student Violation Reporting System
+</footer>
+
+<script>
+/* AUTOMATIC YEAR */
+document.getElementById('yr').textContent = new Date().getFullYear();
+
+/* SMOOTH SCROLL ANIMATION */
+let scrollAnimationId = null;
+
+function glide(targetY) {
+    // Stop any previous scrolling animation
+    if (scrollAnimationId !== null) {
+        cancelAnimationFrame(scrollAnimationId);
+    }
+
+    const startY = window.scrollY;
+    const distance = targetY - startY;
+    const duration = Math.min(1100, 500 + Math.abs(distance) * 0.25);
+    let startTime = null;
+
+    function step(currentTime) {
+        if (startTime === null) {
+            startTime = currentTime;
+        }
+
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        // Ease-in-out movement for a smooth scroll
+        const ease = progress < 0.5
+            ? 4 * progress * progress * progress
+            : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+
+        window.scrollTo(0, startY + distance * ease);
+
+        if (progress < 1) {
+            scrollAnimationId = requestAnimationFrame(step);
+        } else {
+            scrollAnimationId = null;
+        }
+    }
+
+    scrollAnimationId = requestAnimationFrame(step);
+}
+
+/* SCROLL TO A SECTION */
+function goTo(selector) {
+    const element = document.querySelector(selector);
+
+    if (!element) {
+        return;
+    }
+
+    const targetY = selector === '#top'
+        ? 0
+        : element.getBoundingClientRect().top + window.scrollY - 63;
+
+    glide(Math.max(0, targetY));
+}
+
+/* SMOOTH SCROLL FOR INTERNAL LINKS */
+document.querySelectorAll('a[href^="#"]').forEach(function (link) {
+    link.addEventListener('click', function (event) {
+        const target = link.getAttribute('href');
+
+        if (document.querySelector(target)) {
+            event.preventDefault();
+            goTo(target);
+
+            // Update the URL hash without triggering a jump
+            history.replaceState(null, '', target);
+        }
+    });
+});
+
+/* SMOOTH SCROLL FOR THE ABOUT BUTTON */
+document.getElementById('aboutBtn').addEventListener('click', function () {
+    goTo('#about');
+});
+
+/* ACCOUNT TABS */
+const tabs = document.querySelectorAll('.tab');
+
+function show(tab) {
+    tabs.forEach(function (currentTab) {
+        const isActive = currentTab === tab;
+
+        currentTab.setAttribute('aria-selected', isActive);
+
+        const panel = document.getElementById(
+            currentTab.getAttribute('aria-controls')
+        );
+
+        panel.classList.toggle('on', isActive);
+        panel.hidden = !isActive;
+    });
+}
+
+tabs.forEach(function (tab, index) {
+    tab.addEventListener('click', function () {
+        show(tab);
+    });
+
+    tab.addEventListener('keydown', function (event) {
+        if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+            event.preventDefault();
+
+            const direction = event.key === 'ArrowRight' ? 1 : -1;
+            const nextIndex = (index + direction + tabs.length) % tabs.length;
+            const nextTab = tabs[nextIndex];
+
+            nextTab.focus();
+            show(nextTab);
+        }
+    });
+});
+</script>
+
+</body>
+</html>
