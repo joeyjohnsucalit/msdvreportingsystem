@@ -3,15 +3,22 @@
     padding: 0;
     box-sizing: border-box;
 }
-
+html {
+    overflow: hidden;
+}
 body {
-    background: linear-gradient(to bottom, #091a47, #081F5D);
+    background:
+        linear-gradient(180deg,rgba(6, 18, 56, 0.92) 0%,rgba(10, 29, 77, 0.80) 45%,rgba(6, 18, 56, 0.96) 100%),
+        url("../images/mcc.jpeg") center / cover no-repeat,
+        #0a1d4d;
+    background-attachment: fixed;
     width: 100%;
     min-height: 100vh;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: 'Oswald', sans-serif;
+    overflow: hidden;
 }
 
 .wrapper {
