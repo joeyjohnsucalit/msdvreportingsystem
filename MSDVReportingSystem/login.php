@@ -24,7 +24,7 @@ function redirectByRole($role) {
             header('Location: teacher/report-form.php');
             break;
         default:
-            header('Location: index.html?error=' . urlencode('Unknown role. Please contact the administrator.'));
+            header('Location: login.html?error=' . urlencode('Unknown role. Please contact the administrator.'));
             break;
     }
     exit;
@@ -55,7 +55,7 @@ if (isset($_COOKIE['remember_token'])) {
 
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: index.html');
+    header('Location: login.html');
     exit;
 }
 
@@ -64,7 +64,7 @@ $password = $_POST['password'] ?? '';
 $remember = isset($_POST['remember_me']);
 
 if (empty($username) || empty($password)) {
-    header('Location: index.html?error=' .
+    header('Location: login.html?error=' .
         urlencode('Please enter both username and password.'));
     exit;
 }
@@ -74,7 +74,7 @@ $stmt->execute([$username]);
 $user = $stmt->fetch();
 
 if (!$user || !password_verify($password, $user['password'])) {
-    header('Location: index.html?error=' .
+    header('Location: login.html?error=' .
         urlencode('Incorrect username or password. Please try again.'));
     exit;
 }
