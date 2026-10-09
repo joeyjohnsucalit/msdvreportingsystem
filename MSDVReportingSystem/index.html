@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 
@@ -8,8 +7,10 @@
 
 <title>MSDV</title>
 
-<link rel="icon" type="image/png" href="./assets/images/mccLogo.png?v=3">
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="./assets/images/mccLogo.png?v=4" type="image/png">
+<link rel="shortcut icon" href="./assets/images/mccLogo.png?v=4" type="image/png">
+
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
 :root {
@@ -33,9 +34,11 @@
     margin: 0;
     padding: 0;
 }
+
 ::-webkit-scrollbar {
     display: none;
 }
+
 html {
     scroll-behavior: auto;
     scroll-padding-top: 72px;
@@ -43,15 +46,23 @@ html {
 }
 
 body {
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-family: 'Oswald', sans-serif;
     color: var(--ink);
     background: var(--bg);
     line-height: 1.6;
 }
 
+button,
+input,
+select,
+textarea {
+    font-family: 'Oswald', sans-serif;
+}
+
 a {
     color: inherit;
     text-decoration: none;
+    font-family: 'Oswald', sans-serif;
 }
 
 :focus-visible {
@@ -71,6 +82,7 @@ a {
     align-items: center;
     justify-content: space-between;
     padding: 0 clamp(16px, 4vw, 48px);
+    font-family: 'Oswald', sans-serif;
 }
 
 .brand {
@@ -123,6 +135,7 @@ a {
     font-weight: 600;
     padding: 8px 14px;
     border-radius: 8px;
+    font-family: 'Oswald', sans-serif;
 }
 
 .bar nav a:hover {
@@ -133,6 +146,8 @@ a {
 .bar nav a.cta {
     background: var(--red);
     color: #fff;
+    width: 100px;
+    text-align: center;
 }
 
 .bar nav a.cta:hover {
@@ -164,6 +179,7 @@ a {
     padding: 96px 20px 64px;
     position: relative;
     overflow: hidden;
+    font-family: 'Oswald', sans-serif;
 }
 
 .hero::after {
@@ -201,6 +217,7 @@ a {
     font-weight: 800;
     letter-spacing: -.04em;
     line-height: 1;
+    font-family: 'Oswald', sans-serif;
 }
 
 .hero h2 {
@@ -210,6 +227,7 @@ a {
     color: #b9c7ec;
     max-width: 34ch;
     margin-inline: auto;
+    font-family: 'Oswald', sans-serif;
 }
 
 .btns {
@@ -227,8 +245,7 @@ a {
     min-width: 150px;
     padding: 14px 28px;
     border-radius: 12px;
-    font: 700 16px inherit;
-    font-family: inherit;
+    font: 700 16px 'Oswald', sans-serif;
     border: 2px solid transparent;
     cursor: pointer;
     transition: transform .15s, background .15s;
@@ -260,7 +277,6 @@ a {
 /* ABOUT */
 section.about {
     padding: clamp(56px, 9vw, 104px) clamp(16px, 4vw, 48px);
-    scroll-margin-top: 64px;
 }
 
 .wrap {
@@ -273,6 +289,7 @@ section.about {
     font-weight: 700;
     color: var(--gold);
     letter-spacing: .08em;
+    
 }
 
 .about h3 {
@@ -302,7 +319,7 @@ section.about {
     padding: 16px;
     text-align: left;
     cursor: pointer;
-    font-family: inherit;
+    font-family: 'Oswald', sans-serif;
     color: var(--ink);
     transition: border-color .15s, box-shadow .15s;
 }
@@ -470,8 +487,7 @@ section.about {
     border-radius: 10px;
     border: 1px solid var(--line);
     background: #fff;
-    font: 600 14px inherit;
-    font-family: inherit;
+    font: 600 14px 'Oswald', sans-serif;
     cursor: pointer;
     color: var(--ink);
 }
@@ -798,22 +814,6 @@ footer {
 
 <body>
 
-<header class="bar">
-    <a class="brand" href="#top">
-        <div class="logo">
-            <img src="assets/images/mccLogo.png" alt="MCC logo">
-        </div>
-        <div>
-            <span>MSDV</span>
-            <small>MCC Student Violation System</small>
-        </div>
-    </a>
-
-    <nav>
-        <a href="#about">About</a>
-        <a class="cta" href="login.html">Login</a>
-    </nav>
-</header>
 
 <main id="top">
 
@@ -824,7 +824,7 @@ footer {
             </div>
 
             <h1>MSDV</h1>
-            <h2>MCC Student Violation Reporting System</h2>
+            <h2>MCC Student Discipline and Violation Reporting System</h2>
 
             <div class="btns">
                 <a class="btn primary" href="login.html">Login</a>
@@ -978,7 +978,6 @@ document.getElementById('yr').textContent = new Date().getFullYear();
 let scrollAnimationId = null;
 
 function glide(targetY) {
-    // Stop any previous scrolling animation
     if (scrollAnimationId !== null) {
         cancelAnimationFrame(scrollAnimationId);
     }
@@ -996,7 +995,6 @@ function glide(targetY) {
         const elapsed = currentTime - startTime;
         const progress = Math.min(elapsed / duration, 1);
 
-        // Ease-in-out movement for a smooth scroll
         const ease = progress < 0.5
             ? 4 * progress * progress * progress
             : 1 - Math.pow(-2 * progress + 2, 3) / 2;
@@ -1023,7 +1021,7 @@ function goTo(selector) {
 
     const targetY = selector === '#top'
         ? 0
-        : element.getBoundingClientRect().top + window.scrollY - 63;
+        : element.getBoundingClientRect().top + window.scrollY - 0;
 
     glide(Math.max(0, targetY));
 }
@@ -1036,8 +1034,6 @@ document.querySelectorAll('a[href^="#"]').forEach(function (link) {
         if (document.querySelector(target)) {
             event.preventDefault();
             goTo(target);
-
-            // Update the URL hash without triggering a jump
             history.replaceState(null, '', target);
         }
     });
