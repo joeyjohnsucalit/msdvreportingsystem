@@ -11,7 +11,12 @@
 <link rel="shortcut icon" href="./assets/images/mccLogo.png?v=4" type="image/png">
 
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
-
+<link rel="manifest" href="manifest.json">
+<script>
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js');
+}
+</script>
 <style>
 :root {
     --navy: #0a1d4d;
