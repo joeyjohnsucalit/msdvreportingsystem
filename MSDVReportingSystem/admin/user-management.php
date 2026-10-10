@@ -9,6 +9,18 @@ header("Pragma: no-cache");
 
 define('DELETE_PASSWORD','delete123');
 
+// Staff type => [role value => label shown in the UI]
+$STAFF_ROLES = [
+    'teaching'     => ['teacher' => 'Instructor'],
+    'non_teaching' => ['csu' => 'CSU', 'jassu' => 'JASSU', 'nurse' => 'Nurse'],
+];
+function roleLabel($role){
+    return ['teacher'=>'Instructor','csu'=>'CSU','jassu'=>'JASSU','nurse'=>'Nurse','student'=>'Student'][$role] ?? ucfirst($role);
+}
+function staffTypeLabel($t){
+    return ['teaching'=>'Teaching','non_teaching'=>'Non-Teaching'][$t] ?? '—';
+}
+
 $unreadStmt = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE user_id=? AND is_read=0");
 $unreadStmt->execute([$_SESSION['user_id']]);
 $unreadCount = (int)$unreadStmt->fetchColumn();
@@ -16,23 +28,45 @@ $notifStmt = $pdo->prepare("SELECT * FROM notifications WHERE user_id=? ORDER BY
 $notifStmt->execute([$_SESSION['user_id']]);
 $notifList = $notifStmt->fetchAll();
 
+/* ── ADD USER ── */
 if(isset($_POST['action'])&&$_POST['action']==='add_user'){
-    $full=trim($_POST['full_name']);$uname=trim($_POST['username']);$email=trim($_POST['email']);$pass=$_POST['password'];$pass2=$_POST['confirm_password'];$role=$_POST['role'];
-    if($pass!==$pass2){$_SESSION['err']='Passwords do not match.';}
-    else{try{$pdo->prepare("INSERT INTO users (full_name,username,email,password,role,is_first_login) VALUES (?,?,?,?,?,1)")->execute([$full,$uname,$email,password_hash($pass,PASSWORD_DEFAULT),$role]);$_SESSION['msg']='User added successfully.';}catch(Exception $e){$_SESSION['err']='Username already exists.';}}
+    $full=trim($_POST['full_name']);$uname=trim($_POST['username']);$email=trim($_POST['email']);
+    $pass=$_POST['password'];$pass2=$_POST['confirm_password'];
+    $type=$_POST['staff_type']??'';$role=$_POST['role']??'';
+    if(!isset($STAFF_ROLES[$type][$role])){$_SESSION['err']='Please select a valid staff type and role.';}
+    elseif($pass!==$pass2){$_SESSION['err']='Passwords do not match.';}
+    else{
+        try{
+            $pdo->prepare("INSERT INTO users (full_name,username,email,password,role,staff_type,is_first_login) VALUES (?,?,?,?,?,?,1)")
+                ->execute([$full,$uname,$email,password_hash($pass,PASSWORD_DEFAULT),$role,$type]);
+            $_SESSION['msg']='User added successfully.';
+        }catch(Exception $e){$_SESSION['err']='Username already exists.';}
+    }
     header('Location: user-management.php');exit;
 }
+
+/* ── EDIT USER ── */
 if(isset($_POST['action'])&&$_POST['action']==='edit_user'){
-    $uid=(int)$_POST['user_id'];$full=trim($_POST['full_name']);$uname=trim($_POST['username']);$email=trim($_POST['email']);$role=$_POST['role'];
-    $pdo->prepare("UPDATE users SET full_name=?,username=?,email=?,role=? WHERE id=?")->execute([$full,$uname,$email,$role,$uid]);
-    $_SESSION['msg']='User updated.';header('Location: user-management.php');exit;
+    $uid=(int)$_POST['user_id'];$full=trim($_POST['full_name']);$uname=trim($_POST['username']);$email=trim($_POST['email']);
+    $type=$_POST['staff_type']??'';$role=$_POST['role']??'';
+    if(!isset($STAFF_ROLES[$type][$role])){$_SESSION['err']='Please select a valid staff type and role.';}
+    else{
+        $pdo->prepare("UPDATE users SET full_name=?,username=?,email=?,role=?,staff_type=? WHERE id=? AND role NOT IN ('admin','student')")
+            ->execute([$full,$uname,$email,$role,$type,$uid]);
+        $_SESSION['msg']='User updated.';
+    }
+    header('Location: user-management.php');exit;
 }
+
+/* ── CHANGE PASSWORD ── */
 if(isset($_POST['action'])&&$_POST['action']==='change_password'){
     $uid=(int)$_POST['user_id'];$pass=$_POST['new_password'];$pass2=$_POST['confirm_new_password'];
     if($pass!==$pass2){$_SESSION['err']='Passwords do not match.';}
     else{$pdo->prepare("UPDATE users SET password=? WHERE id=?")->execute([password_hash($pass,PASSWORD_DEFAULT),$uid]);$_SESSION['msg']='Password changed successfully.';}
     header('Location: user-management.php');exit;
 }
+
+/* ── DELETE USER ── */
 if(isset($_POST['action'])&&$_POST['action']==='delete_user'){
     $uid=(int)$_POST['user_id'];$pass=trim($_POST['del_password']);
     if($pass===DELETE_PASSWORD){$pdo->prepare("DELETE FROM users WHERE id=? AND role NOT IN ('admin','student')")->execute([$uid]);$_SESSION['msg']='User deleted.';}
@@ -206,6 +240,7 @@ body { display:flex; background:var(--bg); min-height:100vh; font-family:'Plus J
 .role-badge.teacher { background:#eff4ff; color:#2563eb; }
 .role-badge.csu     { background:#f0fdf4; color:#16a34a; }
 .role-badge.jassu   { background:#fffbeb; color:#d97706; }
+.role-badge.nurse   { background:#fdf2f8; color:#be185d; }
 .role-badge.student { background:#f4f5f7; color:#374151; }
 
 /* Action buttons */
@@ -333,10 +368,10 @@ body { display:flex; background:var(--bg); min-height:100vh; font-family:'Plus J
   <div class="content">
 
     <?php if(isset($_SESSION['msg'])): ?>
-    <div class="alert-banner success"><i class="fas fa-check-circle"></i><?= $_SESSION['msg'] ?><?php unset($_SESSION['msg']); ?></div>
+    <div class="alert-banner success"><i class="fas fa-check-circle"></i><?= htmlspecialchars($_SESSION['msg']) ?><?php unset($_SESSION['msg']); ?></div>
     <?php endif; ?>
     <?php if(isset($_SESSION['err'])): ?>
-    <div class="alert-banner error"><i class="fas fa-exclamation-circle"></i><?= $_SESSION['err'] ?><?php unset($_SESSION['err']); ?></div>
+    <div class="alert-banner error"><i class="fas fa-exclamation-circle"></i><?= htmlspecialchars($_SESSION['err']) ?><?php unset($_SESSION['err']); ?></div>
     <?php endif; ?>
 
     <!-- Page top -->
@@ -365,9 +400,10 @@ body { display:flex; background:var(--bg); min-height:100vh; font-family:'Plus J
         <input type="text" name="search_staff" class="filter-input" placeholder="Search name or username…" value="<?= htmlspecialchars($searchStaff) ?>">
         <select name="role" class="filter-select">
           <option value="">All Roles</option>
-          <option value="teacher" <?=$filterRole==='teacher'?'selected':''?>>Teacher</option>
+          <option value="teacher" <?=$filterRole==='teacher'?'selected':''?>>Instructor</option>
           <option value="csu"     <?=$filterRole==='csu'    ?'selected':''?>>CSU</option>
           <option value="jassu"   <?=$filterRole==='jassu'  ?'selected':''?>>JASSU</option>
+          <option value="nurse"   <?=$filterRole==='nurse'  ?'selected':''?>>Nurse</option>
         </select>
         <button type="submit" class="filter-btn primary"><i class="fas fa-search" style="font-size:11px;"></i> Search</button>
         <a href="user-management.php?tab=staff" class="filter-btn secondary">Reset</a>
@@ -375,19 +411,20 @@ body { display:flex; background:var(--bg); min-height:100vh; font-family:'Plus J
       <div class="table-wrap">
         <table class="data-table">
           <thead>
-            <tr><th>Full Name</th><th>Username</th><th>Email</th><th>Role</th><th style="width:200px;"></th></tr>
+            <tr><th>Full Name</th><th>Username</th><th>Email</th><th>Staff Type</th><th>Role</th><th style="width:200px;"></th></tr>
           </thead>
           <tbody>
             <?php if(empty($staffUsers)): ?>
-            <tr class="empty-row"><td colspan="5"><i class="fas fa-users" style="font-size:20px;display:block;margin-bottom:8px;"></i>No staff users found.</td></tr>
+            <tr class="empty-row"><td colspan="6"><i class="fas fa-users" style="font-size:20px;display:block;margin-bottom:8px;"></i>No staff users found.</td></tr>
             <?php else: foreach($staffUsers as $u): ?>
             <tr>
               <td class="name"><?= htmlspecialchars($u['full_name']) ?></td>
               <td class="muted"><?= htmlspecialchars($u['username']) ?></td>
               <td class="muted"><?= htmlspecialchars($u['email']??'—') ?></td>
-              <td><span class="role-badge <?= $u['role'] ?>"><?= ucfirst($u['role']) ?></span></td>
+              <td class="muted"><?= staffTypeLabel($u['staff_type'] ?? null) ?></td>
+              <td><span class="role-badge <?= htmlspecialchars($u['role']) ?>"><?= roleLabel($u['role']) ?></span></td>
               <td style="display:flex;gap:6px;flex-wrap:wrap;">
-                <button class="act-btn edit"   onclick='openEditUser(<?= json_encode($u) ?>)'><i class="fas fa-pencil-alt" style="font-size:10px;"></i> Edit</button>
+                <button class="act-btn edit"   onclick='openEditUser(<?= json_encode($u, JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_TAG|JSON_HEX_AMP) ?>)'><i class="fas fa-pencil-alt" style="font-size:10px;"></i> Edit</button>
                 <button class="act-btn pass"   onclick='openChangePass(<?= $u["id"] ?>)'><i class="fas fa-key" style="font-size:10px;"></i> Password</button>
                 <button class="act-btn danger" onclick='openDeleteUser(<?= $u["id"] ?>)'><i class="fas fa-trash" style="font-size:10px;"></i> Delete</button>
               </td>
@@ -400,7 +437,7 @@ body { display:flex; background:var(--bg); min-height:100vh; font-family:'Plus J
 
     <!-- STUDENT PANEL -->
     <div id="studentPanel" style="display:<?= $activeTab==='student'?'block':'none' ?>;">
-      
+
       <form method="GET" class="filter-bar">
         <input type="hidden" name="tab" value="student">
         <input type="text" name="search_stu" class="filter-input" placeholder="Search name, username or student ID…" value="<?= htmlspecialchars($searchStu) ?>">
@@ -448,13 +485,16 @@ body { display:flex; background:var(--bg); min-height:100vh; font-family:'Plus J
         <div class="f-group"><label class="f-label">Password</label><input type="password" name="password" class="f-input" required></div>
         <div class="f-group"><label class="f-label">Confirm Password</label><input type="password" name="confirm_password" class="f-input" required></div>
         <div class="f-group">
-          <label class="f-label">Role</label>
-          <select name="role" class="f-select" required>
-            <option value="">Select role…</option>
-            <option value="teacher">Teacher</option>
-            <option value="csu">CSU</option>
-            <option value="jassu">JASSU</option>
+          <label class="f-label">Staff Type</label>
+          <select name="staff_type" id="addType" class="f-select" required onchange="populateRoles('addType','addRole')">
+            <option value="">Select staff type…</option>
+            <option value="teaching">Teaching Staff</option>
+            <option value="non_teaching">Non-Teaching Staff</option>
           </select>
+        </div>
+        <div class="f-group" id="addRoleGroup" style="display:none;">
+          <label class="f-label">Role</label>
+          <select name="role" id="addRole" class="f-select"></select>
         </div>
       </div>
       <div class="modal-footer">
@@ -480,12 +520,15 @@ body { display:flex; background:var(--bg); min-height:100vh; font-family:'Plus J
         <div class="f-group"><label class="f-label">Username</label><input type="text" name="username" id="euUsername" class="f-input" required></div>
         <div class="f-group"><label class="f-label">Email</label><input type="email" name="email" id="euEmail" class="f-input"></div>
         <div class="f-group">
-          <label class="f-label">Role</label>
-          <select name="role" id="euRole" class="f-select">
-            <option value="teacher">Teacher</option>
-            <option value="csu">CSU</option>
-            <option value="jassu">JASSU</option>
+          <label class="f-label">Staff Type</label>
+          <select name="staff_type" id="euType" class="f-select" required onchange="populateRoles('euType','euRole')">
+            <option value="teaching">Teaching Staff</option>
+            <option value="non_teaching">Non-Teaching Staff</option>
           </select>
+        </div>
+        <div class="f-group" id="euRoleGroup">
+          <label class="f-label">Role</label>
+          <select name="role" id="euRole" class="f-select"></select>
         </div>
       </div>
       <div class="modal-footer">
@@ -558,12 +601,39 @@ function switchTab(tab){
     if(tab==='student') switchTab('student');
 })();
 
+// ── STAFF TYPE → ROLE DROPDOWN ──
+const STAFF_ROLES = <?= json_encode($STAFF_ROLES) ?>;
+
+function populateRoles(typeId, roleId, selected){
+    const type   = document.getElementById(typeId).value;
+    const roleEl = document.getElementById(roleId);
+    const group  = roleEl.closest('.f-group');
+    roleEl.innerHTML = '';
+    if(!type || !STAFF_ROLES[type]){ group.style.display='none'; roleEl.required=false; return; }
+    const roles = STAFF_ROLES[type];
+    const keys  = Object.keys(roles);
+    if(keys.length > 1){
+        roleEl.add(new Option('Select role…',''));          // several choices → force a pick
+    }
+    keys.forEach(k => roleEl.add(new Option(roles[k], k))); // teaching → just "Instructor"
+    if(selected) roleEl.value = selected;
+    roleEl.required = true;
+    group.style.display = 'block';
+}
+
+// Reset the Add modal every time it closes
+document.getElementById('addUserModal').addEventListener('hidden.bs.modal', function(){
+    this.querySelector('form').reset();
+    populateRoles('addType','addRole');
+});
+
 function openEditUser(u){
-    document.getElementById('editUID').value     = u.id;
-    document.getElementById('euName').value      = u.full_name;
-    document.getElementById('euUsername').value  = u.username;
-    document.getElementById('euEmail').value     = u.email ?? '';
-    document.getElementById('euRole').value      = u.role;
+    document.getElementById('editUID').value    = u.id;
+    document.getElementById('euName').value     = u.full_name;
+    document.getElementById('euUsername').value = u.username;
+    document.getElementById('euEmail').value    = u.email ?? '';
+    document.getElementById('euType').value     = u.staff_type || (u.role==='teacher' ? 'teaching' : 'non_teaching');
+    populateRoles('euType','euRole',u.role);
     new bootstrap.Modal(document.getElementById('editUserModal')).show();
 }
 function openChangePass(uid){ document.getElementById('cpUID').value = uid; new bootstrap.Modal(document.getElementById('changePassModal')).show(); }
