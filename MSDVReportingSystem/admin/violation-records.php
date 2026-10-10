@@ -33,10 +33,12 @@ if($search){$where.=" AND (s.full_name LIKE ? OR v.student_id LIKE ?)";$params[]
 if($filterCat){$where.=" AND v.category=?";$params[]=$filterCat;}
 if($filterStatus){$where.=" AND v.status=?";$params[]=$filterStatus;}
 
-/* FIXED: LEFT JOIN users so violations still show when the reporter account was deleted */
+/* LEFT JOIN users so violations still show when the reporter account was deleted.
+   reporter_staff_type = Teaching / Non-Teaching (users.staff_type) */
 $stmt=$pdo->prepare("SELECT v.*,s.full_name,c.name as course_name,d.name as dept_name,
     COALESCE(u.full_name,'Deleted user') as reporter_name,
     COALESCE(u.role,'—') as reporter_role,
+    u.staff_type as reporter_staff_type,
     da.sanction,da.status as da_status
   FROM violations v
   JOIN students s ON v.student_id=s.student_id
@@ -195,6 +197,8 @@ body { display:flex; background:var(--bg); min-height:100vh; font-family:'Plus J
 .mini-badge.completed { background:#f0fdf4; color:#16a34a; }
 .mini-badge.ongoing   { background:#fffbeb; color:#d97706; }
 .mini-badge.pending   { background:#f4f5f7; color:#6b7280; }
+.mini-badge.teaching     { background:#eff4ff; color:#2563eb; }
+.mini-badge.non_teaching { background:#f5f3ff; color:#7c3aed; }
 
 /* Tally boxes */
 .tally-wrap { display:flex; gap:4px; align-items:center; }
@@ -454,26 +458,35 @@ document.addEventListener('DOMContentLoaded',function(){
 });
 <?php endif; ?>
 
+const ROLE_LABELS       = { teacher:'Instructor', csu:'CSU', jassu:'JASSU', nurse:'Nurse' };
+const STAFF_TYPE_LABELS = { teaching:'Teaching', non_teaching:'Non-Teaching' };
+
 function openViolationView(v){
     const evidence = v.evidence_path
-        ? `<div class="media-box"><img src="../${v.evidence_path}" alt="Evidence"></div>`
+        ? `<div class="media-box"><img src="../${escHtml(v.evidence_path)}" alt="Evidence"></div>`
         : `<div class="media-box"><span class="no-media"><i class="fas fa-image" style="margin-right:6px;"></i>No evidence uploaded</span></div>`;
     const face = v.face_capture_path
-        ? `<div class="media-box"><img src="../${v.face_capture_path}" alt="Face Capture"></div>`
+        ? `<div class="media-box"><img src="../${escHtml(v.face_capture_path)}" alt="Face Capture"></div>`
         : `<div class="media-box"><span class="no-media"><i class="fas fa-user" style="margin-right:6px;"></i>No face capture</span></div>`;
     const sig = v.signature_path
-        ? `<div class="media-box"><img src="../${v.signature_path}" alt="Signature" style="max-height:80px;"></div>`
+        ? `<div class="media-box"><img src="../${escHtml(v.signature_path)}" alt="Signature" style="max-height:80px;"></div>`
         : `<div class="media-box"><span class="no-media"><i class="fas fa-signature" style="margin-right:6px;"></i>No signature</span></div>`;
+
+    // Reporter info
+    const roleLabel = ROLE_LABELS[v.reporter_role] || v.reporter_role || '—';
+    const staffType = v.reporter_staff_type
+        ? `<span class="mini-badge ${escHtml(v.reporter_staff_type)}">${escHtml(STAFF_TYPE_LABELS[v.reporter_staff_type] || v.reporter_staff_type)}</span>`
+        : '—';
 
     document.getElementById('vvBody').innerHTML = `
         <div class="info-grid" style="grid-template-columns:1fr 1fr 1fr;">
           <div class="info-cell">
             <div class="info-key">Student ID</div>
-            <div class="info-val sid-val">${v.student_id}</div>
+            <div class="info-val sid-val">${escHtml(v.student_id)}</div>
           </div>
           <div class="info-cell" style="grid-column:span 2;">
             <div class="info-key">Full Name</div>
-            <div class="info-val">${v.full_name}</div>
+            <div class="info-val">${escHtml(v.full_name)}</div>
           </div>
           <div class="info-cell">
             <div class="info-key">Category</div>
@@ -481,11 +494,11 @@ function openViolationView(v){
           </div>
           <div class="info-cell" style="grid-column:span 2;">
             <div class="info-key">Violation</div>
-            <div class="info-val">${v.violation}</div>
+            <div class="info-val">${escHtml(v.violation)}</div>
           </div>
           <div class="info-cell" style="grid-column:span 3;">
             <div class="info-key">Description</div>
-            <div class="info-val" style="font-weight:400;color:var(--text-2);">${v.description||'—'}</div>
+            <div class="info-val" style="font-weight:400;color:var(--text-2);">${escHtml(v.description||'—')}</div>
           </div>
           <div class="info-cell">
             <div class="info-key">Status</div>
@@ -493,19 +506,23 @@ function openViolationView(v){
           </div>
           <div class="info-cell">
             <div class="info-key">Date Submitted</div>
-            <div class="info-val">${v.date_submitted}</div>
+            <div class="info-val">${escHtml(v.date_submitted)}</div>
           </div>
           <div class="info-cell">
             <div class="info-key">Sanction</div>
-            <div class="info-val">${v.sanction||'—'}</div>
+            <div class="info-val">${escHtml(v.sanction||'—')}</div>
           </div>
           <div class="info-cell">
             <div class="info-key">Reporter</div>
-            <div class="info-val">${v.reporter_name}</div>
+            <div class="info-val">${escHtml(v.reporter_name)}</div>
           </div>
-          <div class="info-cell" style="grid-column:span 2;">
+          <div class="info-cell">
+            <div class="info-key">Staff Type</div>
+            <div class="info-val">${staffType}</div>
+          </div>
+          <div class="info-cell">
             <div class="info-key">Reporter Role</div>
-            <div class="info-val" style="text-transform:capitalize;">${v.reporter_role}</div>
+            <div class="info-val">${escHtml(roleLabel)}</div>
           </div>
         </div>
         <div class="sec-lbl">Attachments</div>
