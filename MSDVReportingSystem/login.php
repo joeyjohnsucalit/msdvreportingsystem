@@ -11,6 +11,9 @@ function redirectByRole($role) {
         case 'admin':
             header('Location: admin/dashboard.php');
             break;
+        case 'nurse':
+            header('Location: nurse/my-reports.php');
+            break;
         case 'student':
             header('Location: student/dashboard.php');
             break;
