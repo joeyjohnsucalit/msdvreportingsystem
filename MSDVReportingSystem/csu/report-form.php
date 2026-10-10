@@ -1,13 +1,35 @@
 <?php
 session_start();
 require_once '../db/connection.php';
-$allowedRoles = ['teacher','csu','jassu'];
+// Same file can be copied into the teacher, csu, jassu and nurse folders
+$allowedRoles = ['teacher','csu','jassu','nurse'];
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], $allowedRoles)) {
     header('Location: ../index.php'); exit;
 }
 
 $role = $_SESSION['role'];
 $msg = $err = '';
+
+/**
+ * Save a base64 data-URL image (png / jpeg / webp) into the uploads folder.
+ * Returns the relative path (e.g. "uploads/evidence_123.jpg") or null on failure.
+ */
+function save_data_url_image($dataUrl, $prefix, $uploadDir, &$error = null) {
+    if (!preg_match('#^data:image/(png|jpe?g|webp);base64,#i', $dataUrl, $m)) {
+        $error = 'Invalid image data.'; return null;
+    }
+    $bin = base64_decode(substr($dataUrl, strpos($dataUrl, ',') + 1), true);
+    if ($bin === false || @getimagesizefromstring($bin) === false) {
+        $error = 'The image could not be read.'; return null;
+    }
+    $t   = strtolower($m[1]);
+    $ext = $t === 'png' ? 'png' : ($t === 'webp' ? 'webp' : 'jpg');
+    $name = $prefix . '_' . time() . '_' . bin2hex(random_bytes(3)) . '.' . $ext;
+    if (@file_put_contents($uploadDir . $name, $bin) === false) {
+        $error = 'The uploads folder is not writable.'; return null;
+    }
+    return 'uploads/' . $name;
+}
 
 // FIRST LOGIN PASSWORD CHANGE
 if (isset($_POST['action']) && $_POST['action'] === 'first_change_pass') {
@@ -46,72 +68,98 @@ if (isset($_POST['action']) && $_POST['action'] === 'submit_report') {
     if (!$student) {
         $err = 'Student ID not found in records.';
     } else {
+        $uploadDir = __DIR__ . '/../uploads/';
+        if (!is_dir($uploadDir)) { @mkdir($uploadDir, 0755, true); }
+
+        /* ── EVIDENCE ──
+           1) evidence_data  = compressed image from the browser (upload OR camera)
+           2) $_FILES['evidence'] = fallback if the browser could not compress it */
         $evidencePath = null;
-        if (!empty($_FILES['evidence']['name'])) {
-            $ext = pathinfo($_FILES['evidence']['name'], PATHINFO_EXTENSION);
-            $fname = 'uploads/evidence_' . time() . '.' . $ext;
-            move_uploaded_file($_FILES['evidence']['tmp_name'], '../' . $fname);
-            $evidencePath = $fname;
-        }
-
-        $facePath = null;
-        if (!empty($_POST['face_capture_data'])) {
-            $imgData = str_replace('data:image/png;base64,', '', $_POST['face_capture_data']);
-            $imgData = base64_decode($imgData);
-            $facePath = 'uploads/face_' . time() . '.png';
-            file_put_contents('../' . $facePath, $imgData);
-        }
-
-        $sigPath = null;
-        if (!empty($_POST['signature_data'])) {
-            $sigData = str_replace('data:image/png;base64,', '', $_POST['signature_data']);
-            $sigData = base64_decode($sigData);
-            $sigPath = 'uploads/sig_' . time() . '.png';
-            file_put_contents('../' . $sigPath, $sigData);
-        }
-
-        $pdo->prepare("INSERT INTO violations (student_id,reporter_id,category,violation,description,evidence_path,face_capture_path,signature_path) VALUES (?,?,?,?,?,?,?,?)")
-            ->execute([$sid, $_SESSION['user_id'], $category, $violation, $description, $evidencePath, $facePath, $sigPath]);
-
-        $violationId = $pdo->lastInsertId();
-
-        $minorCount = (int)$pdo->query("SELECT COUNT(*) FROM violations WHERE student_id='$sid' AND category='minor'")->fetchColumn();
-        $majorCount = (int)$pdo->query("SELECT COUNT(*) FROM violations WHERE student_id='$sid' AND category='major'")->fetchColumn();
-
-        $sanction = '';
-        if ($category === 'minor') {
-            $offense = $minorCount;
-            if ($offense == 1)      $sanction = 'First Offense: Verbal Warning and Counseling';
-            elseif ($offense == 2)  $sanction = 'Second Offense: Written Warning and Reflective Essay';
-            elseif ($offense == 3)  $sanction = 'Third Offense: Community Service 5-10 hours and Parental Notification';
-            elseif ($offense == 4)  $sanction = 'Fourth Offense: Short-term Suspension 1-3 days and Mandatory Workshop';
-            elseif ($offense >= 5)  $sanction = 'Fifth Offense: Long-term Suspension 1 week and Disciplinary Probation';
-        } else {
-            $offense = $majorCount;
-            if ($offense == 1) {
-                $sanction = $violation === 'Academic Dishonesty'
-                    ? 'First Major Offense (Academic Dishonesty): Failing grade for the course and Mandatory Ethics Workshop'
-                    : 'First Major Offense: Suspension (1 week to 1 month) and Mandatory Counseling';
-            } elseif ($offense == 2) {
-                $sanction = $violation === 'Academic Dishonesty'
-                    ? 'Second Major Offense (Academic Dishonesty): Suspension for 1 Semester'
-                    : 'Second Major Offense: Suspension (1 month to 1 semester) and Extended Counseling';
-            } elseif ($offense >= 3) {
-                $sanction = $violation === 'Academic Dishonesty'
-                    ? 'Third Major Offense (Academic Dishonesty): Expulsion'
-                    : 'Third Major Offense: Expulsion and Notification to Authorities if Applicable';
+        $imgErr = null;
+        if (!empty($_POST['evidence_data'])) {
+            $evidencePath = save_data_url_image($_POST['evidence_data'], 'evidence', $uploadDir, $imgErr);
+            if (!$evidencePath) {
+                $err = 'Could not save the evidence photo. ' . $imgErr;
+            }
+        } elseif (!empty($_FILES['evidence']['name'])) {
+            $f = $_FILES['evidence'];
+            if ($f['error'] === UPLOAD_ERR_INI_SIZE || $f['error'] === UPLOAD_ERR_FORM_SIZE) {
+                $err = 'The evidence image is too large. Please choose a smaller photo.';
+            } elseif ($f['error'] !== UPLOAD_ERR_OK) {
+                $err = 'Evidence upload failed (error code ' . (int)$f['error'] . ').';
+            } else {
+                $ext = strtolower(pathinfo($f['name'], PATHINFO_EXTENSION));
+                $ok  = in_array($ext, ['jpg','jpeg','png','gif','webp'], true) && @getimagesize($f['tmp_name']) !== false;
+                if (!$ok) {
+                    $err = 'Only JPG, PNG, GIF or WEBP images are allowed as evidence.';
+                } else {
+                    $fname = 'evidence_' . time() . '_' . bin2hex(random_bytes(3)) . '.' . $ext;
+                    if (move_uploaded_file($f['tmp_name'], $uploadDir . $fname)) {
+                        $evidencePath = 'uploads/' . $fname;
+                    } else {
+                        $err = 'Could not save the uploaded image. Make sure the uploads folder exists and is writable.';
+                    }
+                }
             }
         }
 
-        $pdo->prepare("INSERT INTO disciplinary_actions (violation_id,student_id,sanction,status) VALUES (?,?,?,'pending')")
-            ->execute([$violationId, $sid, $sanction]);
+        if ($err === '') {
+            $facePath = null;
+            if (!empty($_POST['face_capture_data'])) {
+                $facePath = save_data_url_image($_POST['face_capture_data'], 'face', $uploadDir);
+            }
 
-        $adminId = $pdo->query("SELECT id FROM users WHERE role='admin' LIMIT 1")->fetchColumn();
-        $pdo->prepare("INSERT INTO notifications (user_id,message,link) VALUES (?,?,?)")
-            ->execute([$adminId, "New violation reported for student $sid by " . $_SESSION['full_name'], '../admin/violation-records.php']);
+            $sigPath = null;
+            if (!empty($_POST['signature_data'])) {
+                $sigPath = save_data_url_image($_POST['signature_data'], 'sig', $uploadDir);
+            }
 
-        $_SESSION['report_success'] = true;
-        header('Location: report-form.php'); exit;
+            $pdo->prepare("INSERT INTO violations (student_id,reporter_id,category,violation,description,evidence_path,face_capture_path,signature_path) VALUES (?,?,?,?,?,?,?,?)")
+                ->execute([$sid, $_SESSION['user_id'], $category, $violation, $description, $evidencePath, $facePath, $sigPath]);
+
+            $violationId = $pdo->lastInsertId();
+
+            $cntStmt = $pdo->prepare("SELECT COUNT(*) FROM violations WHERE student_id=? AND category=?");
+            $cntStmt->execute([$sid, 'minor']);
+            $minorCount = (int)$cntStmt->fetchColumn();
+            $cntStmt->execute([$sid, 'major']);
+            $majorCount = (int)$cntStmt->fetchColumn();
+
+            $sanction = '';
+            if ($category === 'minor') {
+                $offense = $minorCount;
+                if ($offense == 1)      $sanction = 'First Offense: Verbal Warning and Counseling';
+                elseif ($offense == 2)  $sanction = 'Second Offense: Written Warning and Reflective Essay';
+                elseif ($offense == 3)  $sanction = 'Third Offense: Community Service 5-10 hours and Parental Notification';
+                elseif ($offense == 4)  $sanction = 'Fourth Offense: Short-term Suspension 1-3 days and Mandatory Workshop';
+                elseif ($offense >= 5)  $sanction = 'Fifth Offense: Long-term Suspension 1 week and Disciplinary Probation';
+            } else {
+                $offense = $majorCount;
+                if ($offense == 1) {
+                    $sanction = $violation === 'Academic Dishonesty'
+                        ? 'First Major Offense (Academic Dishonesty): Failing grade for the course and Mandatory Ethics Workshop'
+                        : 'First Major Offense: Suspension (1 week to 1 month) and Mandatory Counseling';
+                } elseif ($offense == 2) {
+                    $sanction = $violation === 'Academic Dishonesty'
+                        ? 'Second Major Offense (Academic Dishonesty): Suspension for 1 Semester'
+                        : 'Second Major Offense: Suspension (1 month to 1 semester) and Extended Counseling';
+                } elseif ($offense >= 3) {
+                    $sanction = $violation === 'Academic Dishonesty'
+                        ? 'Third Major Offense (Academic Dishonesty): Expulsion'
+                        : 'Third Major Offense: Expulsion and Notification to Authorities if Applicable';
+                }
+            }
+
+            $pdo->prepare("INSERT INTO disciplinary_actions (violation_id,student_id,sanction,status) VALUES (?,?,?,'pending')")
+                ->execute([$violationId, $sid, $sanction]);
+
+            $adminId = $pdo->query("SELECT id FROM users WHERE role='admin' LIMIT 1")->fetchColumn();
+            $pdo->prepare("INSERT INTO notifications (user_id,message,link) VALUES (?,?,?)")
+                ->execute([$adminId, "New violation reported for student $sid by " . $_SESSION['full_name'], '../admin/violation-records.php']);
+
+            $_SESSION['report_success'] = true;
+            header('Location: report-form.php'); exit;
+        }
     }
 }
 
@@ -714,7 +762,7 @@ if (isset($_GET['get_student'])) {
     <?php if(isset($_SESSION['cp_err'])): ?>
       <div class="alert alert-danger" style="margin-bottom:12px">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <?= $_SESSION['cp_err'] ?><?php unset($_SESSION['cp_err']); ?>
+        <?= htmlspecialchars($_SESSION['cp_err']) ?><?php unset($_SESSION['cp_err']); ?>
       </div>
     <?php endif; ?>
     <div class="field"><label>New Password</label>
@@ -753,6 +801,7 @@ if (isset($_GET['get_student'])) {
     <input type="hidden" name="action" value="submit_report">
     <input type="hidden" name="face_capture_data" id="faceCaptureData">
     <input type="hidden" name="signature_data" id="signatureData">
+    <input type="hidden" name="evidence_data" id="evidenceData">
 
     <!-- STEP 1 -->
     <div class="section">
@@ -969,31 +1018,64 @@ function loadViolations(cat) {
         .forEach(v => sel.innerHTML += `<option value="${v}">${v}</option>`);
 }
 
-/* ── FILE INPUT ── */
-function showFileName(input) {
-    const label = document.getElementById('fileNameLabel');
-    if (input.files[0]) {
-        label.textContent = input.files[0].name;
-        const reader = new FileReader();
-        reader.onload = e => {
-            document.getElementById('evidencePreviewImg').src = e.target.result;
-            document.getElementById('evidencePreview').style.display = 'block';
+/* ── EVIDENCE: UPLOAD (resized in the browser so big phone photos never hit the server limit) ── */
+function compressImage(file, maxSide, quality) {
+    return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => {
+            const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+            const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+            const c = document.createElement('canvas');
+            c.width = w; c.height = h;
+            const ctx = c.getContext('2d');
+            ctx.fillStyle = '#fff';
+            ctx.fillRect(0, 0, w, h);
+            ctx.drawImage(img, 0, 0, w, h);
+            URL.revokeObjectURL(url);
+            resolve(c.toDataURL('image/jpeg', quality));
         };
-        reader.readAsDataURL(input.files[0]);
-    }
+        img.onerror = () => { URL.revokeObjectURL(url); reject(); };
+        img.src = url;
+    });
+}
+
+function showFileName(input) {
+    const file = input.files[0];
+    if (!file) return;
+    document.getElementById('fileNameLabel').textContent = file.name;
+    // an uploaded file replaces any camera evidence
+    document.getElementById('evidenceCamPreview').style.display = 'none';
+    document.getElementById('evidenceData').value = '';
+
+    const prev = document.getElementById('evidencePreviewImg');
+    const box  = document.getElementById('evidencePreview');
+
+    compressImage(file, 1600, 0.85).then(data => {
+        document.getElementById('evidenceData').value = data;   // sent to the server
+        prev.src = data;
+        box.style.display = 'block';
+        input.value = '';   // don't also send the original (possibly huge) file
+    }).catch(() => {
+        // browser could not decode it → fall back to sending the original file
+        const reader = new FileReader();
+        reader.onload = e => { prev.src = e.target.result; box.style.display = 'block'; };
+        reader.readAsDataURL(file);
+    });
 }
 function clearFile() {
     document.getElementById('evidenceFile').value = '';
+    document.getElementById('evidenceData').value = '';
     document.getElementById('fileNameLabel').textContent = 'Choose an image…';
     document.getElementById('evidencePreview').style.display = 'none';
 }
 function clearCamEvidence() {
-    evidenceCamData = null;
+    document.getElementById('evidenceData').value = '';
     document.getElementById('evidenceCamPreview').style.display = 'none';
 }
 
 /* ── CAMERA ── */
-let stream = null, cameraMode = '', evidenceCamData = null;
+let stream = null, cameraMode = '';
 
 function openCamera(mode) {
     cameraMode = mode;
@@ -1023,7 +1105,7 @@ function capturePhoto() {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0);
-    document.getElementById('capturedImgEl').src = canvas.toDataURL('image/png');
+    document.getElementById('capturedImgEl').src = canvas.toDataURL('image/jpeg', 0.9);
     document.getElementById('cameraLive').style.display = 'none';
     document.getElementById('cameraReview').style.display = 'block';
 }
@@ -1034,14 +1116,15 @@ function retakePhoto() {
 }
 
 function confirmPhoto() {
-    const data = document.getElementById('cameraCanvas').toDataURL('image/png');
+    const data = document.getElementById('cameraCanvas').toDataURL('image/jpeg', 0.9);
     if (cameraMode === 'face') {
         document.getElementById('faceCaptureData').value = data;
         document.getElementById('faceCapturePreview').innerHTML =
             `<img src="${data}" class="face-thumb" alt="Face capture">`;
         document.getElementById('faceCaptureBtn').classList.add('active');
     } else {
-        evidenceCamData = data;
+        clearFile();                                   // camera evidence replaces an uploaded file
+        document.getElementById('evidenceData').value = data;
         document.getElementById('evidenceCamImg').src = data;
         document.getElementById('evidenceCamPreview').style.display = 'block';
     }
