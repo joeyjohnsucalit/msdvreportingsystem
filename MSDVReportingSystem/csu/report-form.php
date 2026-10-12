@@ -1,35 +1,13 @@
 <?php
 session_start();
 require_once '../db/connection.php';
-// Same file can be copied into the teacher, csu, jassu and nurse folders
-$allowedRoles = ['teacher','csu','jassu','nurse'];
+$allowedRoles = ['teacher','csu','jassu','nurse','student'];
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['role'], $allowedRoles)) {
     header('Location: ../index.php'); exit;
 }
 
 $role = $_SESSION['role'];
 $msg = $err = '';
-
-/**
- * Save a base64 data-URL image (png / jpeg / webp) into the uploads folder.
- * Returns the relative path (e.g. "uploads/evidence_123.jpg") or null on failure.
- */
-function save_data_url_image($dataUrl, $prefix, $uploadDir, &$error = null) {
-    if (!preg_match('#^data:image/(png|jpe?g|webp);base64,#i', $dataUrl, $m)) {
-        $error = 'Invalid image data.'; return null;
-    }
-    $bin = base64_decode(substr($dataUrl, strpos($dataUrl, ',') + 1), true);
-    if ($bin === false || @getimagesizefromstring($bin) === false) {
-        $error = 'The image could not be read.'; return null;
-    }
-    $t   = strtolower($m[1]);
-    $ext = $t === 'png' ? 'png' : ($t === 'webp' ? 'webp' : 'jpg');
-    $name = $prefix . '_' . time() . '_' . bin2hex(random_bytes(3)) . '.' . $ext;
-    if (@file_put_contents($uploadDir . $name, $bin) === false) {
-        $error = 'The uploads folder is not writable.'; return null;
-    }
-    return 'uploads/' . $name;
-}
 
 // FIRST LOGIN PASSWORD CHANGE
 if (isset($_POST['action']) && $_POST['action'] === 'first_change_pass') {
@@ -54,6 +32,14 @@ if (isset($_POST['action']) && $_POST['action'] === 'first_change_pass') {
     header('Location: report-form.php'); exit;
 }
 
+// Student reporters: find their own student ID so they can't report themselves
+$ownSid = null;
+if ($role === 'student') {
+    $own = $pdo->prepare("SELECT student_id FROM students WHERE user_id=?");
+    $own->execute([$_SESSION['user_id']]);
+    $ownSid = $own->fetchColumn();
+}
+
 // SUBMIT REPORT
 if (isset($_POST['action']) && $_POST['action'] === 'submit_report') {
     $sid         = trim($_POST['student_id']);
@@ -67,99 +53,79 @@ if (isset($_POST['action']) && $_POST['action'] === 'submit_report') {
 
     if (!$student) {
         $err = 'Student ID not found in records.';
+    } elseif ($ownSid && $ownSid === $sid) {
+        $err = 'You cannot report yourself.';
     } else {
-        $uploadDir = __DIR__ . '/../uploads/';
-        if (!is_dir($uploadDir)) { @mkdir($uploadDir, 0755, true); }
-
-        /* ── EVIDENCE ──
-           1) evidence_data  = compressed image from the browser (upload OR camera)
-           2) $_FILES['evidence'] = fallback if the browser could not compress it */
         $evidencePath = null;
-        $imgErr = null;
-        if (!empty($_POST['evidence_data'])) {
-            $evidencePath = save_data_url_image($_POST['evidence_data'], 'evidence', $uploadDir, $imgErr);
-            if (!$evidencePath) {
-                $err = 'Could not save the evidence photo. ' . $imgErr;
-            }
-        } elseif (!empty($_FILES['evidence']['name'])) {
-            $f = $_FILES['evidence'];
-            if ($f['error'] === UPLOAD_ERR_INI_SIZE || $f['error'] === UPLOAD_ERR_FORM_SIZE) {
-                $err = 'The evidence image is too large. Please choose a smaller photo.';
-            } elseif ($f['error'] !== UPLOAD_ERR_OK) {
-                $err = 'Evidence upload failed (error code ' . (int)$f['error'] . ').';
-            } else {
-                $ext = strtolower(pathinfo($f['name'], PATHINFO_EXTENSION));
-                $ok  = in_array($ext, ['jpg','jpeg','png','gif','webp'], true) && @getimagesize($f['tmp_name']) !== false;
-                if (!$ok) {
-                    $err = 'Only JPG, PNG, GIF or WEBP images are allowed as evidence.';
-                } else {
-                    $fname = 'evidence_' . time() . '_' . bin2hex(random_bytes(3)) . '.' . $ext;
-                    if (move_uploaded_file($f['tmp_name'], $uploadDir . $fname)) {
-                        $evidencePath = 'uploads/' . $fname;
-                    } else {
-                        $err = 'Could not save the uploaded image. Make sure the uploads folder exists and is writable.';
-                    }
-                }
+        if (!empty($_FILES['evidence']['name'])) {
+            $ext = pathinfo($_FILES['evidence']['name'], PATHINFO_EXTENSION);
+            $fname = 'uploads/evidence_' . time() . '.' . $ext;
+            move_uploaded_file($_FILES['evidence']['tmp_name'], '../' . $fname);
+            $evidencePath = $fname;
+        }
+
+        $facePath = null;
+        if (!empty($_POST['face_capture_data'])) {
+            $imgData = str_replace('data:image/png;base64,', '', $_POST['face_capture_data']);
+            $imgData = base64_decode($imgData);
+            $facePath = 'uploads/face_' . time() . '.png';
+            file_put_contents('../' . $facePath, $imgData);
+        }
+
+        $sigPath = null;
+        if (!empty($_POST['signature_data'])) {
+            $sigData = str_replace('data:image/png;base64,', '', $_POST['signature_data']);
+            $sigData = base64_decode($sigData);
+            $sigPath = 'uploads/sig_' . time() . '.png';
+            file_put_contents('../' . $sigPath, $sigData);
+        }
+
+        $pdo->prepare("INSERT INTO violations (student_id,reporter_id,category,violation,description,evidence_path,face_capture_path,signature_path) VALUES (?,?,?,?,?,?,?,?)")
+            ->execute([$sid, $_SESSION['user_id'], $category, $violation, $description, $evidencePath, $facePath, $sigPath]);
+
+        $violationId = $pdo->lastInsertId();
+
+        // Offense counts (prepared statements instead of string interpolation)
+        $cntStmt = $pdo->prepare("SELECT COUNT(*) FROM violations WHERE student_id=? AND category=?");
+        $cntStmt->execute([$sid, 'minor']);
+        $minorCount = (int)$cntStmt->fetchColumn();
+        $cntStmt->execute([$sid, 'major']);
+        $majorCount = (int)$cntStmt->fetchColumn();
+
+        $sanction = '';
+        if ($category === 'minor') {
+            $offense = $minorCount;
+            if ($offense == 1)      $sanction = 'First Offense: Verbal Warning and Counseling';
+            elseif ($offense == 2)  $sanction = 'Second Offense: Written Warning and Reflective Essay';
+            elseif ($offense == 3)  $sanction = 'Third Offense: Community Service 5-10 hours and Parental Notification';
+            elseif ($offense == 4)  $sanction = 'Fourth Offense: Short-term Suspension 1-3 days and Mandatory Workshop';
+            elseif ($offense >= 5)  $sanction = 'Fifth Offense: Long-term Suspension 1 week and Disciplinary Probation';
+        } else {
+            $offense = $majorCount;
+            if ($offense == 1) {
+                $sanction = $violation === 'Academic Dishonesty'
+                    ? 'First Major Offense (Academic Dishonesty): Failing grade for the course and Mandatory Ethics Workshop'
+                    : 'First Major Offense: Suspension (1 week to 1 month) and Mandatory Counseling';
+            } elseif ($offense == 2) {
+                $sanction = $violation === 'Academic Dishonesty'
+                    ? 'Second Major Offense (Academic Dishonesty): Suspension for 1 Semester'
+                    : 'Second Major Offense: Suspension (1 month to 1 semester) and Extended Counseling';
+            } elseif ($offense >= 3) {
+                $sanction = $violation === 'Academic Dishonesty'
+                    ? 'Third Major Offense (Academic Dishonesty): Expulsion'
+                    : 'Third Major Offense: Expulsion and Notification to Authorities if Applicable';
             }
         }
 
-        if ($err === '') {
-            $facePath = null;
-            if (!empty($_POST['face_capture_data'])) {
-                $facePath = save_data_url_image($_POST['face_capture_data'], 'face', $uploadDir);
-            }
+        $pdo->prepare("INSERT INTO disciplinary_actions (violation_id,student_id,sanction,status) VALUES (?,?,?,'pending')")
+            ->execute([$violationId, $sid, $sanction]);
 
-            $sigPath = null;
-            if (!empty($_POST['signature_data'])) {
-                $sigPath = save_data_url_image($_POST['signature_data'], 'sig', $uploadDir);
-            }
+        $adminId = $pdo->query("SELECT id FROM users WHERE role='admin' LIMIT 1")->fetchColumn();
+        $pdo->prepare("INSERT INTO notifications (user_id,message,link) VALUES (?,?,?)")
+            ->execute([$adminId, "New violation reported for student $sid by " . $_SESSION['full_name'], '../admin/violation-records.php']);
 
-            $pdo->prepare("INSERT INTO violations (student_id,reporter_id,category,violation,description,evidence_path,face_capture_path,signature_path) VALUES (?,?,?,?,?,?,?,?)")
-                ->execute([$sid, $_SESSION['user_id'], $category, $violation, $description, $evidencePath, $facePath, $sigPath]);
-
-            $violationId = $pdo->lastInsertId();
-
-            $cntStmt = $pdo->prepare("SELECT COUNT(*) FROM violations WHERE student_id=? AND category=?");
-            $cntStmt->execute([$sid, 'minor']);
-            $minorCount = (int)$cntStmt->fetchColumn();
-            $cntStmt->execute([$sid, 'major']);
-            $majorCount = (int)$cntStmt->fetchColumn();
-
-            $sanction = '';
-            if ($category === 'minor') {
-                $offense = $minorCount;
-                if ($offense == 1)      $sanction = 'First Offense: Verbal Warning and Counseling';
-                elseif ($offense == 2)  $sanction = 'Second Offense: Written Warning and Reflective Essay';
-                elseif ($offense == 3)  $sanction = 'Third Offense: Community Service 5-10 hours and Parental Notification';
-                elseif ($offense == 4)  $sanction = 'Fourth Offense: Short-term Suspension 1-3 days and Mandatory Workshop';
-                elseif ($offense >= 5)  $sanction = 'Fifth Offense: Long-term Suspension 1 week and Disciplinary Probation';
-            } else {
-                $offense = $majorCount;
-                if ($offense == 1) {
-                    $sanction = $violation === 'Academic Dishonesty'
-                        ? 'First Major Offense (Academic Dishonesty): Failing grade for the course and Mandatory Ethics Workshop'
-                        : 'First Major Offense: Suspension (1 week to 1 month) and Mandatory Counseling';
-                } elseif ($offense == 2) {
-                    $sanction = $violation === 'Academic Dishonesty'
-                        ? 'Second Major Offense (Academic Dishonesty): Suspension for 1 Semester'
-                        : 'Second Major Offense: Suspension (1 month to 1 semester) and Extended Counseling';
-                } elseif ($offense >= 3) {
-                    $sanction = $violation === 'Academic Dishonesty'
-                        ? 'Third Major Offense (Academic Dishonesty): Expulsion'
-                        : 'Third Major Offense: Expulsion and Notification to Authorities if Applicable';
-                }
-            }
-
-            $pdo->prepare("INSERT INTO disciplinary_actions (violation_id,student_id,sanction,status) VALUES (?,?,?,'pending')")
-                ->execute([$violationId, $sid, $sanction]);
-
-            $adminId = $pdo->query("SELECT id FROM users WHERE role='admin' LIMIT 1")->fetchColumn();
-            $pdo->prepare("INSERT INTO notifications (user_id,message,link) VALUES (?,?,?)")
-                ->execute([$adminId, "New violation reported for student $sid by " . $_SESSION['full_name'], '../admin/violation-records.php']);
-
-            $_SESSION['report_success'] = true;
-            header('Location: report-form.php'); exit;
-        }
+        $_SESSION['report_success'] = true;
+        header('Location: report-form.php'); exit;
     }
 }
 
@@ -194,9 +160,11 @@ if (isset($_GET['get_student'])) {
     --text-primary: #1a1a1a;
     --text-secondary: #6b6860;
     --text-muted: #9c9a95;
-    --accent: #2d6a4f;
-    --accent-light: #e8f5ee;
-    --accent-hover: #235c43;
+    --accent: #1d4ed8;
+    --accent-light: #eff6ff;
+    --accent-hover: #1e40af;
+    --success: #2d6a4f;
+    --success-light: #e8f5ee;
     --danger: #c0392b;
     --danger-light: #fdf2f1;
     --warn: #b7791f;
@@ -251,49 +219,12 @@ if (isset($_GET['get_student'])) {
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .btn-logout {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    text-decoration: none;
-    padding: 4px 10px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    transition: all 0.15s;
-    white-space: nowrap;
-  }
-  .btn-logout:hover { background: var(--bg); color: var(--text-primary); }
-
-  /* ── BOTTOM NAV ── */
-  .bottom-nav {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    z-index: 100;
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-    display: flex;
-  }
-  .bottom-nav a {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3px;
-    padding: 10px 0 12px;
-    text-decoration: none;
-    color: var(--text-muted);
-    font-size: 11px;
-    font-weight: 500;
-    transition: color 0.15s;
-  }
-  .bottom-nav a.active, .bottom-nav a:hover { color: var(--accent); }
-  .bottom-nav svg { width: 20px; height: 20px; }
 
   /* ── PAGE LAYOUT ── */
   .page {
     max-width: 560px;
     margin: 0 auto;
-    padding: 20px 16px 100px;
+    padding: 20px 16px 40px;
   }
 
   .page-title {
@@ -318,7 +249,7 @@ if (isset($_GET['get_student'])) {
     margin-bottom: 16px;
     animation: slideDown 0.3s ease;
   }
-  .alert-success { background: var(--accent-light); color: var(--accent); border: 1px solid #b7dfc9; }
+  .alert-success { background: var(--success-light); color: var(--success); border: 1px solid #b7dfc9; }
   .alert-danger  { background: var(--danger-light); color: var(--danger); border: 1px solid #f0c4bf; }
   .alert-warn    { background: var(--warn-light); color: var(--warn); border: 1px solid #f5dba0; }
   .alert svg { flex-shrink: 0; width: 16px; height: 16px; margin-top: 1px; }
@@ -445,7 +376,7 @@ if (isset($_GET['get_student'])) {
   .student-card {
     display: none;
     background: var(--accent-light);
-    border: 1px solid #b7dfc9;
+    border: 1px solid #bfdbfe;
     border-radius: var(--radius-sm);
     padding: 12px 14px;
     margin-top: 10px;
@@ -552,7 +483,7 @@ if (isset($_GET['get_student'])) {
     background: #fff;
     position: relative;
   }
-  .sig-wrap canvas { display: block; width: 100%; height: 110px; touch-action: none; }
+  .sig-wrap canvas { display: block; width: 100%; height: auto; aspect-ratio: 1 / 1; touch-action: none; cursor: crosshair; }
   .sig-hint {
     position: absolute;
     top: 50%; left: 50%; transform: translate(-50%,-50%);
@@ -736,18 +667,158 @@ if (isset($_GET['get_student'])) {
     object-fit: cover;
     border: 2px solid var(--accent);
   }
+
+  /* ── BURGER BUTTON ── */
+  .topbar-left { display: flex; align-items: center; gap: 10px; }
+  .burger-btn {
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--text-primary);
+    transition: background 0.15s;
+  }
+  .burger-btn:hover { background: var(--bg); }
+  .burger-btn svg { width: 20px; height: 20px; }
+
+  /* ── SIDEBAR ── */
+  .sb-overlay {
+    position: fixed; inset: 0;
+    z-index: 200;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(2px);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .sb-overlay.open { opacity: 1; pointer-events: auto; }
+
+  .sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0;
+    z-index: 210;
+    width: 280px; max-width: 82vw;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+    display: flex; flex-direction: column;
+    transform: translateX(-100%);
+    transition: transform 0.28s ease;
+  }
+  .sidebar.open { transform: translateX(0); }
+
+  .sb-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px; height: 52px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sb-close {
+    width: 32px; height: 32px;
+    background: none; border: none; cursor: pointer;
+    color: var(--text-secondary); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .sb-close:hover { background: var(--bg); color: var(--text-primary); }
+  .sb-close svg { width: 18px; height: 18px; }
+
+  .sb-user { padding: 16px; border-bottom: 1px solid var(--border); }
+  .sb-user-name { font-size: 14px; font-weight: 600; }
+  .sb-user-role {
+    font-size: 11px; font-weight: 500; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px;
+  }
+
+  .sb-nav { flex: 1; overflow-y: auto; padding: 12px 10px; }
+  .sb-label {
+    font-size: 11px; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 8px 10px 6px;
+  }
+  .sb-link {
+    display: flex; align-items: center; gap: 12px;
+    width: 100%;
+    padding: 11px 12px;
+    margin-bottom: 2px;
+    border: none; background: none;
+    border-radius: var(--radius-sm);
+    font-family: inherit; font-size: 14px; font-weight: 500;
+    color: var(--text-secondary);
+    text-decoration: none; text-align: left;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .sb-link svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .sb-link:hover { background: var(--bg); color: var(--text-primary); }
+  .sb-link.active { background: var(--accent-light); color: var(--accent); }
+
+  .sb-foot { padding: 12px 10px; border-top: 1px solid var(--border); }
+  .sb-link.logout:hover { background: var(--danger-light); color: var(--danger); }
 </style>
 </head>
 <body>
 
 <!-- ── TOP BAR ── -->
 <header class="topbar">
-  <span class="topbar-brand">MSDV</span>
+  <div class="topbar-left">
+    <button type="button" class="burger-btn" id="burgerBtn" aria-label="Open menu" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <span class="topbar-brand">MSDV</span>
+  </div>
   <div class="topbar-right">
     <span class="topbar-user"><?= htmlspecialchars($_SESSION['full_name']) ?></span>
-    <a href="../logout.php" class="btn-logout">Logout</a>
   </div>
 </header>
+
+<!-- ── SIDEBAR ── -->
+<div class="sb-overlay" id="sbOverlay"></div>
+<aside class="sidebar" id="sidebar" aria-label="Main menu">
+  <div class="sb-head">
+    <span class="topbar-brand">MSDV</span>
+    <button type="button" class="sb-close" id="sbClose" aria-label="Close menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+
+  <div class="sb-user">
+    <div class="sb-user-name"><?= htmlspecialchars($_SESSION['full_name']) ?></div>
+    <div class="sb-user-role"><?= htmlspecialchars($_SESSION['role']) ?></div>
+  </div>
+
+  <nav class="sb-nav">
+    <div class="sb-label">Menu</div>
+    <?php if ($role === 'student'): ?>
+    <a href="dashboard.php" class="sb-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Dashboard
+    </a>
+    <?php endif; ?>
+    <a href="report-form.php" class="sb-link active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Report
+    </a>
+    <?php if ($role !== 'student'): ?>
+    <a href="my-reports.php" class="sb-link ">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      My Reports
+    </a>
+    <?php endif; ?>
+
+    <div class="sb-label" style="margin-top:10px">Help</div>
+    <a href="violation-guidelines.php" class="sb-link ">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      Violation Guidelines
+    </a>
+  </nav>
+
+  <div class="sb-foot">
+    <a href="../logout.php" class="sb-link logout">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Logout
+    </a>
+  </div>
+</aside>
+
 
 <!-- ── FIRST LOGIN MODAL ── -->
 <?php if($_SESSION['is_first_login'] == 1): ?>
@@ -801,7 +872,6 @@ if (isset($_GET['get_student'])) {
     <input type="hidden" name="action" value="submit_report">
     <input type="hidden" name="face_capture_data" id="faceCaptureData">
     <input type="hidden" name="signature_data" id="signatureData">
-    <input type="hidden" name="evidence_data" id="evidenceData">
 
     <!-- STEP 1 -->
     <div class="section">
@@ -903,7 +973,7 @@ if (isset($_GET['get_student'])) {
         <div class="field" style="margin-top:18px">
           <label>Student Signature</label>
           <div class="sig-wrap">
-            <canvas id="signatureCanvas" width="600" height="110"></canvas>
+            <canvas id="signatureCanvas" width="600" height="600"></canvas>
             <div class="sig-hint" id="sigHint">Sign here</div>
             <div class="sig-actions">
               <button type="button" class="clear-btn" onclick="clearSignature()">Clear</button>
@@ -967,18 +1037,6 @@ if (isset($_GET['get_student'])) {
   </div>
 </div>
 
-<!-- ── BOTTOM NAV ── -->
-<nav class="bottom-nav">
-  <a href="report-form.php" class="active">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-    Report
-  </a>
-  <a href="my-reports.php">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-    My Reports
-  </a>
-</nav>
-
 <script>
 /* ── STUDENT ID FORMAT ── */
 document.getElementById('studentIDInput').addEventListener('input', function(){
@@ -1018,64 +1076,31 @@ function loadViolations(cat) {
         .forEach(v => sel.innerHTML += `<option value="${v}">${v}</option>`);
 }
 
-/* ── EVIDENCE: UPLOAD (resized in the browser so big phone photos never hit the server limit) ── */
-function compressImage(file, maxSide, quality) {
-    return new Promise((resolve, reject) => {
-        const url = URL.createObjectURL(file);
-        const img = new Image();
-        img.onload = () => {
-            const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
-            const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
-            const c = document.createElement('canvas');
-            c.width = w; c.height = h;
-            const ctx = c.getContext('2d');
-            ctx.fillStyle = '#fff';
-            ctx.fillRect(0, 0, w, h);
-            ctx.drawImage(img, 0, 0, w, h);
-            URL.revokeObjectURL(url);
-            resolve(c.toDataURL('image/jpeg', quality));
-        };
-        img.onerror = () => { URL.revokeObjectURL(url); reject(); };
-        img.src = url;
-    });
-}
-
+/* ── FILE INPUT ── */
 function showFileName(input) {
-    const file = input.files[0];
-    if (!file) return;
-    document.getElementById('fileNameLabel').textContent = file.name;
-    // an uploaded file replaces any camera evidence
-    document.getElementById('evidenceCamPreview').style.display = 'none';
-    document.getElementById('evidenceData').value = '';
-
-    const prev = document.getElementById('evidencePreviewImg');
-    const box  = document.getElementById('evidencePreview');
-
-    compressImage(file, 1600, 0.85).then(data => {
-        document.getElementById('evidenceData').value = data;   // sent to the server
-        prev.src = data;
-        box.style.display = 'block';
-        input.value = '';   // don't also send the original (possibly huge) file
-    }).catch(() => {
-        // browser could not decode it → fall back to sending the original file
+    const label = document.getElementById('fileNameLabel');
+    if (input.files[0]) {
+        label.textContent = input.files[0].name;
         const reader = new FileReader();
-        reader.onload = e => { prev.src = e.target.result; box.style.display = 'block'; };
-        reader.readAsDataURL(file);
-    });
+        reader.onload = e => {
+            document.getElementById('evidencePreviewImg').src = e.target.result;
+            document.getElementById('evidencePreview').style.display = 'block';
+        };
+        reader.readAsDataURL(input.files[0]);
+    }
 }
 function clearFile() {
     document.getElementById('evidenceFile').value = '';
-    document.getElementById('evidenceData').value = '';
     document.getElementById('fileNameLabel').textContent = 'Choose an image…';
     document.getElementById('evidencePreview').style.display = 'none';
 }
 function clearCamEvidence() {
-    document.getElementById('evidenceData').value = '';
+    evidenceCamData = null;
     document.getElementById('evidenceCamPreview').style.display = 'none';
 }
 
 /* ── CAMERA ── */
-let stream = null, cameraMode = '';
+let stream = null, cameraMode = '', evidenceCamData = null;
 
 function openCamera(mode) {
     cameraMode = mode;
@@ -1105,7 +1130,7 @@ function capturePhoto() {
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     canvas.getContext('2d').drawImage(video, 0, 0);
-    document.getElementById('capturedImgEl').src = canvas.toDataURL('image/jpeg', 0.9);
+    document.getElementById('capturedImgEl').src = canvas.toDataURL('image/png');
     document.getElementById('cameraLive').style.display = 'none';
     document.getElementById('cameraReview').style.display = 'block';
 }
@@ -1116,15 +1141,14 @@ function retakePhoto() {
 }
 
 function confirmPhoto() {
-    const data = document.getElementById('cameraCanvas').toDataURL('image/jpeg', 0.9);
+    const data = document.getElementById('cameraCanvas').toDataURL('image/png');
     if (cameraMode === 'face') {
         document.getElementById('faceCaptureData').value = data;
         document.getElementById('faceCapturePreview').innerHTML =
             `<img src="${data}" class="face-thumb" alt="Face capture">`;
         document.getElementById('faceCaptureBtn').classList.add('active');
     } else {
-        clearFile();                                   // camera evidence replaces an uploaded file
-        document.getElementById('evidenceData').value = data;
+        evidenceCamData = data;
         document.getElementById('evidenceCamImg').src = data;
         document.getElementById('evidenceCamPreview').style.display = 'block';
     }
@@ -1140,7 +1164,7 @@ function stopCamera() {
 const sigCanvas = document.getElementById('signatureCanvas');
 const sigCtx = sigCanvas.getContext('2d');
 sigCtx.strokeStyle = '#1a1a1a';
-sigCtx.lineWidth = 2;
+sigCtx.lineWidth = 3;
 sigCtx.lineCap = 'round';
 sigCtx.lineJoin = 'round';
 let signing = false, hasSigned = false;
@@ -1190,6 +1214,20 @@ document.getElementById('cameraOverlay').addEventListener('click', function(e){
 document.getElementById('confirmOverlay').addEventListener('click', function(e){
     if (e.target === this) closeConfirm();
 });
+</script>
+<script>
+/* ── SIDEBAR ── */
+(function () {
+  const sidebar   = document.getElementById('sidebar');
+  const sbOverlay = document.getElementById('sbOverlay');
+  const burger    = document.getElementById('burgerBtn');
+  function openSidebar()  { sidebar.classList.add('open');    sbOverlay.classList.add('open');    burger.setAttribute('aria-expanded','true'); }
+  function closeSidebar() { sidebar.classList.remove('open'); sbOverlay.classList.remove('open'); burger.setAttribute('aria-expanded','false'); }
+  burger.addEventListener('click', openSidebar);
+  document.getElementById('sbClose').addEventListener('click', closeSidebar);
+  sbOverlay.addEventListener('click', closeSidebar);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSidebar(); });
+})();
 </script>
 </body>
 </html>
