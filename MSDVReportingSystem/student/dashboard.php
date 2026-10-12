@@ -78,13 +78,6 @@ $viols->execute([$student['student_id']]);
 $violations = $viols->fetchAll();
 
 
-$notifs = $pdo->prepare("SELECT * FROM notifications WHERE user_id=? ORDER BY created_at DESC LIMIT 10");
-$notifs->execute([$_SESSION['user_id']]);
-$notifList = $notifs->fetchAll();
-$unreadCount = $pdo->prepare("SELECT COUNT(*) FROM notifications WHERE user_id=? AND is_read=0");
-$unreadCount->execute([$_SESSION['user_id']]);
-$unread = $unreadCount->fetchColumn();
-
 $minorCount = count(array_filter($violations, fn($v) => $v['category'] === 'minor'));
 $majorCount = count(array_filter($violations, fn($v) => $v['category'] === 'major'));
 ?>
@@ -113,6 +106,9 @@ $majorCount = count(array_filter($violations, fn($v) => $v['category'] === 'majo
     --accent-light: #fef2f2;
     --accent-hover: #991b1b;
     --accent-border: #fca5a5;
+    --danger: #b91c1c;
+    --danger-light: #fef2f2;
+    --danger-border: #fca5a5;
     --success: #2d6a4f;
     --success-light: #e8f5ee;
     --warn: #b7791f;
@@ -121,6 +117,7 @@ $majorCount = count(array_filter($violations, fn($v) => $v['category'] === 'majo
     --minor-color: #1d4ed8;
     --radius: 12px;
     --radius-sm: 8px;
+    --shadow-md: 0 4px 16px rgba(0,0,0,0.08);
   }
 
   html, body {
@@ -166,84 +163,6 @@ $majorCount = count(array_filter($violations, fn($v) => $v['category'] === 'majo
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .btn-logout {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    text-decoration: none;
-    padding: 4px 10px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    transition: all 0.15s;
-    white-space: nowrap;
-  }
-  .btn-logout:hover { background: var(--bg); color: var(--text-primary); }
-
-  /* ── NOTIF BELL ── */
-  .notif-btn {
-    position: relative;
-    background: none;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 4px 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-secondary);
-    transition: all 0.15s;
-  }
-  .notif-btn:hover { background: var(--bg); color: var(--text-primary); }
-  .notif-btn svg { width: 16px; height: 16px; }
-  .notif-dot {
-    position: absolute;
-    top: 3px; right: 3px;
-    width: 7px; height: 7px;
-    background: var(--accent);
-    border-radius: 50%;
-    border: 1.5px solid var(--surface);
-  }
-  .notif-dropdown {
-    display: none;
-    position: fixed;
-    top: 60px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: calc(100vw - 32px);
-    max-width: 340px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: 0 4px 16px rgba(0,0,0,0.10);
-    z-index: 200;
-    overflow: hidden;
-    animation: fadeDown 0.15s ease;
-  }
-  .notif-dropdown.open { display: block; }
-  @keyframes fadeDown {
-    from { opacity: 0; transform: translateY(-4px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-  .notif-header {
-    padding: 10px 14px;
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.03em;
-    color: var(--text-secondary);
-    border-bottom: 1px solid var(--border);
-  }
-  .notif-item {
-    padding: 10px 14px;
-    border-bottom: 1px solid var(--border);
-    font-size: 12px;
-    color: var(--text-primary);
-  }
-  .notif-item:last-child { border-bottom: none; }
-  .notif-item.unread { background: var(--accent-light); }
-  .notif-time { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
-  .notif-empty { padding: 20px 14px; text-align: center; font-size: 13px; color: var(--text-muted); }
-  .notif-wrap { position: relative; }
 
   /* ── PAGE LAYOUT ── */
   .page {
@@ -274,7 +193,7 @@ $majorCount = count(array_filter($violations, fn($v) => $v['category'] === 'majo
     animation: slideDown 0.3s ease;
   }
   .alert-success { background: var(--success-light); color: var(--success); border: 1px solid #b7dfc9; }
-  .alert-danger  { background: var(--accent-light); color: var(--accent); border: 1px solid var(--accent-border); }
+  .alert-danger  { background: var(--danger-light); color: var(--danger); border: 1px solid var(--danger-border); }
   .alert svg { flex-shrink: 0; width: 16px; height: 16px; margin-top: 1px; }
   .alert-close { margin-left: auto; cursor: pointer; opacity: 0.6; background: none; border: none; font-size: 16px; line-height: 1; color: inherit; }
   @keyframes slideDown {
@@ -357,7 +276,21 @@ $majorCount = count(array_filter($violations, fn($v) => $v['category'] === 'majo
   }
   .stat-card.total .stat-value { color: var(--text-primary); }
   .stat-card.minor .stat-value { color: var(--minor-color); }
-  .stat-card.major .stat-value { color: var(--accent); }
+  .stat-card.major .stat-value { color: var(--danger); }
+
+  /* clickable filter cards */
+  .stat-card {
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: border-color 0.15s, background 0.15s, box-shadow 0.15s, transform 0.1s;
+  }
+  .stat-card:hover { border-color: var(--text-muted); }
+  .stat-card:active { transform: scale(0.97); }
+  .stat-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .stat-card.total.active { border-color: var(--text-primary); box-shadow: 0 0 0 1px var(--text-primary); background: var(--bg); }
+  .stat-card.minor.active { border-color: var(--minor-color); box-shadow: 0 0 0 1px var(--minor-color); background: var(--minor-bg); }
+  .stat-card.major.active { border-color: var(--danger); box-shadow: 0 0 0 1px var(--danger); background: var(--danger-light); }
 
   /* ── SECTION ── */
   .section {
@@ -425,13 +358,13 @@ $majorCount = count(array_filter($violations, fn($v) => $v['category'] === 'majo
     white-space: nowrap;
   }
   .badge-minor   { background: var(--minor-bg); color: var(--minor-color); }
-  .badge-major   { background: var(--accent-light); color: var(--accent); }
+  .badge-major   { background: var(--danger-light); color: var(--danger); }
   .badge-pending   { background: var(--bg); color: var(--text-secondary); border: 1px solid var(--border); }
   .badge-ongoing   { background: var(--warn-light); color: var(--warn); }
   .badge-completed { background: var(--success-light); color: var(--success); }
   .badge-appeal-pending  { background: var(--warn-light); color: var(--warn); }
   .badge-appeal-approved { background: var(--success-light); color: var(--success); }
-  .badge-appeal-rejected { background: var(--accent-light); color: var(--accent); }
+  .badge-appeal-rejected { background: var(--danger-light); color: var(--danger); }
 
   .badge-row {
     display: flex;
@@ -451,12 +384,12 @@ $majorCount = count(array_filter($violations, fn($v) => $v['category'] === 'majo
   .viol-date svg { width: 11px; height: 11px; }
 
   .sanction-box {
-    background: var(--accent-light);
-    border: 1px solid var(--accent-border);
+    background: var(--danger-light);
+    border: 1px solid var(--danger-border);
     border-radius: var(--radius-sm);
     padding: 8px 10px;
     font-size: 12px;
-    color: var(--accent);
+    color: var(--danger);
     margin-bottom: 8px;
     display: flex;
     gap: 6px;
@@ -643,6 +576,92 @@ $majorCount = count(array_filter($violations, fn($v) => $v['category'] === 'majo
     transition: background 0.15s;
   }
   .warn-btn:hover { background: #9c6617; }
+
+  /* ── BURGER BUTTON ── */
+  .topbar-left { display: flex; align-items: center; gap: 10px; }
+  .burger-btn {
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--text-primary);
+    transition: background 0.15s;
+  }
+  .burger-btn:hover { background: var(--bg); }
+  .burger-btn svg { width: 20px; height: 20px; }
+
+  /* ── SIDEBAR ── */
+  .sb-overlay {
+    position: fixed; inset: 0;
+    z-index: 200;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(2px);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .sb-overlay.open { opacity: 1; pointer-events: auto; }
+
+  .sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0;
+    z-index: 210;
+    width: 280px; max-width: 82vw;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+    display: flex; flex-direction: column;
+    transform: translateX(-100%);
+    transition: transform 0.28s ease;
+  }
+  .sidebar.open { transform: translateX(0); }
+
+  .sb-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px; height: 52px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sb-close {
+    width: 32px; height: 32px;
+    background: none; border: none; cursor: pointer;
+    color: var(--text-secondary); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .sb-close:hover { background: var(--bg); color: var(--text-primary); }
+  .sb-close svg { width: 18px; height: 18px; }
+
+  .sb-user { padding: 16px; border-bottom: 1px solid var(--border); }
+  .sb-user-name { font-size: 14px; font-weight: 600; }
+  .sb-user-role {
+    font-size: 11px; font-weight: 500; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px;
+  }
+
+  .sb-nav { flex: 1; overflow-y: auto; padding: 12px 10px; }
+  .sb-label {
+    font-size: 11px; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 8px 10px 6px;
+  }
+  .sb-link {
+    display: flex; align-items: center; gap: 12px;
+    width: 100%;
+    padding: 11px 12px;
+    margin-bottom: 2px;
+    border: none; background: none;
+    border-radius: var(--radius-sm);
+    font-family: inherit; font-size: 14px; font-weight: 500;
+    color: var(--text-secondary);
+    text-decoration: none; text-align: left;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .sb-link svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .sb-link:hover { background: var(--bg); color: var(--text-primary); }
+  .sb-link.active { background: var(--accent-light); color: var(--accent); }
+
+  .sb-foot { padding: 12px 10px; border-top: 1px solid var(--border); }
+  .sb-link.logout:hover { background: var(--danger-light); color: var(--danger); }
 </style>
 </head>
 <body>
@@ -674,30 +693,57 @@ $majorCount = count(array_filter($violations, fn($v) => $v['category'] === 'majo
 
 <!-- ── TOP BAR ── -->
 <header class="topbar">
-  <span class="topbar-brand">MSDV</span>
+  <div class="topbar-left">
+    <button type="button" class="burger-btn" id="burgerBtn" aria-label="Open menu" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <span class="topbar-brand">MSDV</span>
+  </div>
   <div class="topbar-right">
-    <!-- Notifications -->
-    <div class="notif-wrap">
-      <button class="notif-btn" id="notifBtn" onclick="toggleNotif()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        <?php if ($unread > 0): ?><span class="notif-dot"></span><?php endif; ?>
-      </button>
-      <div class="notif-dropdown" id="notifDropdown">
-        <div class="notif-header">Notifications<?php if ($unread > 0): ?> · <?= $unread ?> new<?php endif; ?></div>
-        <?php if (empty($notifList)): ?>
-          <div class="notif-empty">No notifications yet</div>
-        <?php else: foreach ($notifList as $n): ?>
-          <div class="notif-item <?= $n['is_read'] ? '' : 'unread' ?>">
-            <?= htmlspecialchars($n['message']) ?>
-            <div class="notif-time"><?= date('M d, Y · g:i A', strtotime($n['created_at'])) ?></div>
-          </div>
-        <?php endforeach; endif; ?>
-      </div>
-    </div>
     <span class="topbar-user"><?= htmlspecialchars($_SESSION['full_name']) ?></span>
-    <a href="../logout.php" class="btn-logout">Logout</a>
   </div>
 </header>
+
+<!-- ── SIDEBAR ── -->
+<div class="sb-overlay" id="sbOverlay"></div>
+<aside class="sidebar" id="sidebar" aria-label="Main menu">
+  <div class="sb-head">
+    <span class="topbar-brand">MSDV</span>
+    <button type="button" class="sb-close" id="sbClose" aria-label="Close menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+
+  <div class="sb-user">
+    <div class="sb-user-name"><?= htmlspecialchars($_SESSION['full_name']) ?></div>
+    <div class="sb-user-role"><?= htmlspecialchars($_SESSION['role']) ?></div>
+  </div>
+
+  <nav class="sb-nav">
+    <div class="sb-label">Menu</div>
+    <a href="dashboard.php" class="sb-link active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Dashboard
+    </a>
+    <a href="report-form.php" class="sb-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Report
+    </a>
+
+    <div class="sb-label" style="margin-top:10px">Help</div>
+    <a href="violation-guidelines.php" class="sb-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      Violation Guidelines
+    </a>
+  </nav>
+
+  <div class="sb-foot">
+    <a href="../logout.php" class="sb-link logout">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Logout
+    </a>
+  </div>
+</aside>
 
 <!-- ── ALERTS ── -->
 <div style="max-width:560px;margin:0 auto;padding:16px 16px 0">
@@ -743,15 +789,15 @@ $majorCount = count(array_filter($violations, fn($v) => $v['category'] === 'majo
 
   <!-- Stats -->
   <div class="stats-row">
-    <div class="stat-card total">
+    <div class="stat-card total active" data-filter="all" role="button" tabindex="0" aria-pressed="true">
       <div class="stat-value"><?= count($violations) ?></div>
       <div class="stat-label">Total</div>
     </div>
-    <div class="stat-card minor">
+    <div class="stat-card minor" data-filter="minor" role="button" tabindex="0" aria-pressed="false">
       <div class="stat-value"><?= $minorCount ?></div>
       <div class="stat-label">Minor</div>
     </div>
-    <div class="stat-card major">
+    <div class="stat-card major" data-filter="major" role="button" tabindex="0" aria-pressed="false">
       <div class="stat-value"><?= $majorCount ?></div>
       <div class="stat-label">Major</div>
     </div>
@@ -760,8 +806,8 @@ $majorCount = count(array_filter($violations, fn($v) => $v['category'] === 'majo
   <!-- Violations -->
   <div class="section">
     <div class="section-header">
-      <span class="section-title">Violation Records</span>
-      <span class="count-badge"><?= count($violations) ?></span>
+      <span class="section-title" id="listTitle">Violation Records</span>
+      <span class="count-badge" id="listCount"><?= count($violations) ?></span>
     </div>
 
     <?php if (empty($violations)): ?>
@@ -781,7 +827,7 @@ $majorCount = count(array_filter($violations, fn($v) => $v['category'] === 'majo
         default     => 'badge-pending',
       };
     ?>
-    <div class="viol-card">
+    <div class="viol-card" data-category="<?= htmlspecialchars($v['category']) ?>">
       <div class="viol-top">
         <div class="viol-name"><?= htmlspecialchars($v['violation']) ?></div>
         <span class="badge <?= $statusClass ?>"><?= ucfirst($v['da_status'] ?? $v['status']) ?></span>
@@ -823,6 +869,11 @@ $majorCount = count(array_filter($violations, fn($v) => $v['category'] === 'majo
       <?php endif; ?>
     </div>
     <?php endforeach; endif; ?>
+
+    <div class="empty-state" id="filterEmpty" style="display:none;padding:32px 24px">
+      <div class="empty-title">No <span id="filterEmptyLabel"></span> violations</div>
+      <div class="empty-sub">Tap Total to see all records.</div>
+    </div>
   </div>
 </div>
 
@@ -860,16 +911,68 @@ function closeAppeal() {
 document.getElementById('appealOverlay').addEventListener('click', function(e){
     if (e.target === this) closeAppeal();
 });
+</script>
+<script>
+/* ── SIDEBAR ── */
+(function () {
+  const sidebar   = document.getElementById('sidebar');
+  const sbOverlay = document.getElementById('sbOverlay');
+  const burger    = document.getElementById('burgerBtn');
+  function openSidebar()  { sidebar.classList.add('open');    sbOverlay.classList.add('open');    burger.setAttribute('aria-expanded','true'); }
+  function closeSidebar() { sidebar.classList.remove('open'); sbOverlay.classList.remove('open'); burger.setAttribute('aria-expanded','false'); }
+  burger.addEventListener('click', openSidebar);
+  document.getElementById('sbClose').addEventListener('click', closeSidebar);
+  sbOverlay.addEventListener('click', closeSidebar);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSidebar(); });
+})();
+</script>
+<script>
+/* ── FILTER BY STAT CARD ── */
+(function () {
+  const cards   = document.querySelectorAll('.stat-card[data-filter]');
+  const items   = document.querySelectorAll('.viol-card');
+  const countEl = document.getElementById('listCount');
+  const titleEl = document.getElementById('listTitle');
+  const emptyEl = document.getElementById('filterEmpty');
+  const emptyLb = document.getElementById('filterEmptyLabel');
+  const titles  = { all: 'Violation Records', minor: 'Minor Violations', major: 'Major Violations' };
 
-function toggleNotif() {
-    document.getElementById('notifDropdown').classList.toggle('open');
-}
-document.addEventListener('click', function(e){
-    const wrap = document.querySelector('.notif-wrap');
-    if (wrap && !wrap.contains(e.target)) {
-        document.getElementById('notifDropdown').classList.remove('open');
+  function apply(filter) {
+    let shown = 0, lastVisible = null;
+    items.forEach(function (el) {
+      const show = filter === 'all' || el.dataset.category === filter;
+      el.style.display = show ? '' : 'none';
+      el.style.borderBottom = '';
+      if (show) { shown++; lastVisible = el; }
+    });
+    if (lastVisible) lastVisible.style.borderBottom = 'none';
+
+    cards.forEach(function (c) {
+      const on = c.dataset.filter === filter;
+      c.classList.toggle('active', on);
+      c.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+
+    countEl.textContent = shown;
+    titleEl.textContent = titles[filter];
+    emptyLb.textContent = filter;
+    emptyEl.style.display = (items.length && !shown) ? 'block' : 'none';
+  }
+
+  cards.forEach(function (c) {
+    function go() {
+      // tapping the active Minor/Major card again goes back to all
+      const same = c.classList.contains('active') && c.dataset.filter !== 'all';
+      apply(same ? 'all' : c.dataset.filter);
     }
-});
+    c.addEventListener('click', go);
+    c.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); }
+    });
+  });
+
+  apply('all');
+})();
 </script>
 </body>
 </html>
