@@ -40,9 +40,11 @@ $myReports = $reports->fetchAll();
     --text-primary: #1a1a1a;
     --text-secondary: #6b6860;
     --text-muted: #9c9a95;
-    --accent: #2d6a4f;
-    --accent-light: #e8f5ee;
-    --accent-hover: #235c43;
+    --accent: #1d4ed8;
+    --accent-light: #eff6ff;
+    --accent-hover: #1e40af;
+    --success: #2d6a4f;
+    --success-light: #e8f5ee;
     --danger: #c0392b;
     --danger-light: #fdf2f1;
     --warn: #b7791f;
@@ -96,49 +98,12 @@ $myReports = $reports->fetchAll();
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .btn-logout {
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text-secondary);
-    text-decoration: none;
-    padding: 4px 10px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    transition: all 0.15s;
-    white-space: nowrap;
-  }
-  .btn-logout:hover { background: var(--bg); color: var(--text-primary); }
-
-  /* ── BOTTOM NAV ── */
-  .bottom-nav {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
-    z-index: 100;
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-    display: flex;
-  }
-  .bottom-nav a {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 3px;
-    padding: 10px 0 12px;
-    text-decoration: none;
-    color: var(--text-muted);
-    font-size: 11px;
-    font-weight: 500;
-    transition: color 0.15s;
-  }
-  .bottom-nav a.active, .bottom-nav a:hover { color: var(--accent); }
-  .bottom-nav svg { width: 20px; height: 20px; }
 
   /* ── PAGE LAYOUT ── */
   .page {
     max-width: 560px;
     margin: 0 auto;
-    padding: 20px 16px 100px;
+    padding: 20px 16px 40px;
   }
 
   .page-title {
@@ -238,7 +203,7 @@ $myReports = $reports->fetchAll();
   .badge-major   { background: var(--danger-light); color: var(--danger); }
   .badge-pending   { background: var(--bg); color: var(--text-secondary); border: 1px solid var(--border); }
   .badge-ongoing   { background: var(--warn-light); color: var(--warn); }
-  .badge-completed { background: var(--accent-light); color: var(--accent); }
+  .badge-completed { background: var(--success-light); color: var(--success); }
 
   .report-meta {
     display: flex;
@@ -331,18 +296,150 @@ $myReports = $reports->fetchAll();
   }
   .empty-cta:hover { background: var(--accent-light); }
   .empty-cta svg { width: 14px; height: 14px; }
+
+  /* ── BURGER BUTTON ── */
+  .topbar-left { display: flex; align-items: center; gap: 10px; }
+  .burger-btn {
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--text-primary);
+    transition: background 0.15s;
+  }
+  .burger-btn:hover { background: var(--bg); }
+  .burger-btn svg { width: 20px; height: 20px; }
+
+  /* ── SIDEBAR ── */
+  .sb-overlay {
+    position: fixed; inset: 0;
+    z-index: 200;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(2px);
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .sb-overlay.open { opacity: 1; pointer-events: auto; }
+
+  .sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0;
+    z-index: 210;
+    width: 280px; max-width: 82vw;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    box-shadow: var(--shadow-md);
+    display: flex; flex-direction: column;
+    transform: translateX(-100%);
+    transition: transform 0.28s ease;
+  }
+  .sidebar.open { transform: translateX(0); }
+
+  .sb-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 16px; height: 52px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sb-close {
+    width: 32px; height: 32px;
+    background: none; border: none; cursor: pointer;
+    color: var(--text-secondary); border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .sb-close:hover { background: var(--bg); color: var(--text-primary); }
+  .sb-close svg { width: 18px; height: 18px; }
+
+  .sb-user { padding: 16px; border-bottom: 1px solid var(--border); }
+  .sb-user-name { font-size: 14px; font-weight: 600; }
+  .sb-user-role {
+    font-size: 11px; font-weight: 500; color: var(--accent);
+    text-transform: uppercase; letter-spacing: 0.04em; margin-top: 2px;
+  }
+
+  .sb-nav { flex: 1; overflow-y: auto; padding: 12px 10px; }
+  .sb-label {
+    font-size: 11px; font-weight: 600; color: var(--text-muted);
+    text-transform: uppercase; letter-spacing: 0.05em;
+    padding: 8px 10px 6px;
+  }
+  .sb-link {
+    display: flex; align-items: center; gap: 12px;
+    width: 100%;
+    padding: 11px 12px;
+    margin-bottom: 2px;
+    border: none; background: none;
+    border-radius: var(--radius-sm);
+    font-family: inherit; font-size: 14px; font-weight: 500;
+    color: var(--text-secondary);
+    text-decoration: none; text-align: left;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .sb-link svg { width: 18px; height: 18px; flex-shrink: 0; }
+  .sb-link:hover { background: var(--bg); color: var(--text-primary); }
+  .sb-link.active { background: var(--accent-light); color: var(--accent); }
+
+  .sb-foot { padding: 12px 10px; border-top: 1px solid var(--border); }
+  .sb-link.logout:hover { background: var(--danger-light); color: var(--danger); }
 </style>
 </head>
 <body>
 
 <!-- ── TOP BAR ── -->
 <header class="topbar">
-  <span class="topbar-brand">MSDV</span>
+  <div class="topbar-left">
+    <button type="button" class="burger-btn" id="burgerBtn" aria-label="Open menu" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <span class="topbar-brand">MSDV</span>
+  </div>
   <div class="topbar-right">
     <span class="topbar-user"><?= htmlspecialchars($_SESSION['full_name']) ?></span>
-    <a href="../logout.php" class="btn-logout">Logout</a>
   </div>
 </header>
+
+<!-- ── SIDEBAR ── -->
+<div class="sb-overlay" id="sbOverlay"></div>
+<aside class="sidebar" id="sidebar" aria-label="Main menu">
+  <div class="sb-head">
+    <span class="topbar-brand">MSDV</span>
+    <button type="button" class="sb-close" id="sbClose" aria-label="Close menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+
+  <div class="sb-user">
+    <div class="sb-user-name"><?= htmlspecialchars($_SESSION['full_name']) ?></div>
+    <div class="sb-user-role"><?= htmlspecialchars($_SESSION['role']) ?></div>
+  </div>
+
+  <nav class="sb-nav">
+    <div class="sb-label">Menu</div>
+    <a href="report-form.php" class="sb-link ">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Report
+    </a>
+    <a href="my-reports.php" class="sb-link active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      My Reports
+    </a>
+
+    <div class="sb-label" style="margin-top:10px">Help</div>
+    <a href="violation-guidelines.php" class="sb-link ">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      Violation Guidelines
+    </a>
+  </nav>
+
+  <div class="sb-foot">
+    <a href="../logout.php" class="sb-link logout">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      Logout
+    </a>
+  </div>
+</aside>
+
 
 <!-- ── MAIN PAGE ── -->
 <div class="page">
@@ -424,17 +521,19 @@ $myReports = $reports->fetchAll();
   </div>
 </div>
 
-<!-- ── BOTTOM NAV ── -->
-<nav class="bottom-nav">
-  <a href="report-form.php">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-    Report
-  </a>
-  <a href="my-reports.php" class="active">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-    My Reports
-  </a>
-</nav>
-
+<script>
+/* ── SIDEBAR ── */
+(function () {
+  const sidebar   = document.getElementById('sidebar');
+  const sbOverlay = document.getElementById('sbOverlay');
+  const burger    = document.getElementById('burgerBtn');
+  function openSidebar()  { sidebar.classList.add('open');    sbOverlay.classList.add('open');    burger.setAttribute('aria-expanded','true'); }
+  function closeSidebar() { sidebar.classList.remove('open'); sbOverlay.classList.remove('open'); burger.setAttribute('aria-expanded','false'); }
+  burger.addEventListener('click', openSidebar);
+  document.getElementById('sbClose').addEventListener('click', closeSidebar);
+  sbOverlay.addEventListener('click', closeSidebar);
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSidebar(); });
+})();
+</script>
 </body>
 </html>
