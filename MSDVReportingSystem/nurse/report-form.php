@@ -66,8 +66,21 @@ if (isset($_POST['action']) && $_POST['action'] === 'submit_report') {
         $evidencePath = null;
 
         // Prefer a successfully uploaded file when one was selected.
-        if (!$err && isset($_FILES['evidence']) &&
-            $_FILES['evidence']['error'] === UPLOAD_ERR_OK &&
+        $uploadError = $_FILES['evidence']['error'] ?? UPLOAD_ERR_NO_FILE;
+        if (!$err && $uploadError !== UPLOAD_ERR_NO_FILE && $uploadError !== UPLOAD_ERR_OK) {
+            $uploadErrors = [
+                UPLOAD_ERR_INI_SIZE   => 'The selected image is larger than the server upload limit.',
+                UPLOAD_ERR_FORM_SIZE  => 'The selected image is too large.',
+                UPLOAD_ERR_PARTIAL    => 'The image upload was interrupted. Please try again.',
+                UPLOAD_ERR_NO_TMP_DIR => 'The server is missing its temporary upload folder.',
+                UPLOAD_ERR_CANT_WRITE => 'The server could not write the uploaded image.',
+                UPLOAD_ERR_EXTENSION  => 'The server blocked the image upload.'
+            ];
+            $err = $uploadErrors[$uploadError] ?? 'The image could not be uploaded. Please try again.';
+        }
+
+        if (!$err && $uploadError === UPLOAD_ERR_OK &&
+            isset($_FILES['evidence']['tmp_name']) &&
             is_uploaded_file($_FILES['evidence']['tmp_name'])) {
 
             $imageInfo = @getimagesize($_FILES['evidence']['tmp_name']);
@@ -926,7 +939,8 @@ if (isset($_GET['get_student'])) {
 
   <form method="POST" enctype="multipart/form-data" id="reportForm">
     <input type="hidden" name="action" value="submit_report">
-    <input type="hidden" name="face_capture_data" id="faceCaptureData">\n    <input type="hidden" name="evidence_capture_data" id="evidenceCaptureData">
+    <input type="hidden" name="face_capture_data" id="faceCaptureData">
+    <input type="hidden" name="evidence_capture_data" id="evidenceCaptureData">
     <input type="hidden" name="signature_data" id="signatureData">
 
     <!-- STEP 1 -->
