@@ -79,10 +79,10 @@ if (isset($_POST['action']) && $_POST['action'] === 'submit_report') {
             $err = $uploadErrors[$uploadError] ?? 'The image could not be uploaded. Please try again.';
         }
 
-        if (!$err && $uploadError === UPLOAD_ERR_OK &&
-            isset($_FILES['evidence']['tmp_name']) &&
-            is_uploaded_file($_FILES['evidence']['tmp_name'])) {
-
+        if (!$err && $uploadError === UPLOAD_ERR_OK) {
+            if (empty($_FILES['evidence']['tmp_name']) || !is_uploaded_file($_FILES['evidence']['tmp_name'])) {
+                $err = 'The selected evidence image did not reach the server. Please choose it again and retry.';
+            } else {
             $imageInfo = @getimagesize($_FILES['evidence']['tmp_name']);
             if ($imageInfo === false) {
                 $err = 'Evidence must be a valid image file.';
@@ -104,6 +104,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'submit_report') {
                         $err = 'The evidence image could not be saved. Check the uploads folder permissions.';
                     }
                 }
+            }
             }
         } elseif (!$err && !empty($_POST['evidence_capture_data'])) {
             // Camera photos are sent as a base64 data URL in a hidden form field.
@@ -129,6 +130,10 @@ if (isset($_POST['action']) && $_POST['action'] === 'submit_report') {
             } else {
                 $err = 'The captured evidence image data is invalid.';
             }
+        }
+
+        if (!$err && $evidencePath === null) {
+            $err = 'No evidence image was received. Please choose an image or take a photo, confirm the preview, and submit again.';
         }
 
         if (!$err) {
