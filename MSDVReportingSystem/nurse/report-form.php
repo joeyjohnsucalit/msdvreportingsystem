@@ -1289,8 +1289,71 @@ function confirmSubmit() {
 function closeConfirm() {
     document.getElementById('confirmOverlay').classList.remove('active');
 }
-function doSubmit() {
-    document.getElementById('reportForm').submit();
+async function doSubmit() {
+    const form = document.getElementById('reportForm');
+    const fileInput = document.getElementById('evidenceFile');
+    const selectedFile = fileInput && fileInput.files ? fileInput.files[0] : null;
+
+    // Mobile phones can produce very large photos. Compress selected images
+    // before the browser sends them, aiming for a small JPEG upload.
+    if (selectedFile) {
+        const looksLikeImage = (selectedFile.type || '').startsWith('image/') ||
+            /\.(jpe?g|png|webp|gif|heic|heif|bmp|avif)$/i.test(selectedFile.name || '');
+        if (!looksLikeImage) {
+            alert('Please choose an image file (JPG, PNG, or WEBP).');
+            return;
+        }
+        try {
+            const compressedFile = await compressEvidenceImage(selectedFile);
+            // Replace the picker file with the compressed JPEG so PHP receives
+            // the smaller version rather than the original mobile photo.
+            const transfer = new DataTransfer();
+            transfer.items.add(compressedFile);
+            fileInput.files = transfer.files;
+            if (fileInput.files[0].size > 2 * 1024 * 1024) {
+                alert('This photo is still too large after compression. Please crop it or choose a smaller photo.');
+                return;
+            }
+        } catch (error) {
+            alert('Your phone/browser could not convert this image. If it is a HEIC/HEIF photo, choose a JPG/PNG version from your gallery, or use Take Photo.');
+            return;
+        }
+    }
+    form.submit();
+}
+
+function compressEvidenceImage(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('Could not read image'));
+        reader.onload = () => {
+            const image = new Image();
+            image.onerror = () => reject(new Error('This format cannot be decoded by this browser'));
+            image.onload = () => {
+                const maxDimension = 1280;
+                const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+                const canvas = document.createElement('canvas');
+                canvas.width = Math.max(1, Math.round(image.width * scale));
+                canvas.height = Math.max(1, Math.round(image.height * scale));
+                const context = canvas.getContext('2d');
+                if (!context) return reject(new Error('Canvas unavailable'));
+                context.drawImage(image, 0, 0, canvas.width, canvas.height);
+                // Retry with lower JPEG quality if needed to keep phone uploads small.
+                const makeBlob = quality => canvas.toBlob(blob => {
+                    if (!blob) return reject(new Error('Compression failed'));
+                    if (blob.size > 1.5 * 1024 * 1024 && quality > 0.4) {
+                        makeBlob(quality - 0.15);
+                        return;
+                    }
+                    const baseName = (file.name || 'evidence').replace(/\.[^.]+$/, '') || 'evidence';
+                    resolve(new File([blob], baseName + '.jpg', { type: 'image/jpeg', lastModified: Date.now() }));
+                }, 'image/jpeg', quality);
+                makeBlob(0.72);
+            };
+            image.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+    });
 }
 
 /* close modals on backdrop tap */
