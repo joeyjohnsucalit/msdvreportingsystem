@@ -56,14 +56,69 @@ if (isset($_POST['action']) && $_POST['action'] === 'submit_report') {
     } elseif ($ownSid && $ownSid === $sid) {
         $err = 'You cannot report yourself.';
     } else {
-        $evidencePath = null;
-        if (!empty($_FILES['evidence']['name'])) {
-            $ext = pathinfo($_FILES['evidence']['name'], PATHINFO_EXTENSION);
-            $fname = 'uploads/evidence_' . time() . '.' . $ext;
-            move_uploaded_file($_FILES['evidence']['tmp_name'], '../' . $fname);
-            $evidencePath = $fname;
+        // Evidence can come from either the file picker OR the camera.
+        // Store both in uploads/ and save a project-relative path in the database.
+        $uploadDir = dirname(__DIR__) . '/uploads/';
+        if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true)) {
+            $err = 'The uploads folder could not be created. Please contact the administrator.';
         }
 
+        $evidencePath = null;
+
+        // Prefer a successfully uploaded file when one was selected.
+        if (!$err && isset($_FILES['evidence']) &&
+            $_FILES['evidence']['error'] === UPLOAD_ERR_OK &&
+            is_uploaded_file($_FILES['evidence']['tmp_name'])) {
+
+            $imageInfo = @getimagesize($_FILES['evidence']['tmp_name']);
+            if ($imageInfo === false) {
+                $err = 'Evidence must be a valid image file.';
+            } else {
+                $mimeToExt = [
+                    'image/jpeg' => 'jpg',
+                    'image/png'  => 'png',
+                    'image/gif'  => 'gif',
+                    'image/webp' => 'webp'
+                ];
+                $mime = $imageInfo['mime'] ?? '';
+                if (!isset($mimeToExt[$mime])) {
+                    $err = 'Please upload a JPG, PNG, GIF, or WEBP image.';
+                } else {
+                    $filename = 'evidence_' . bin2hex(random_bytes(12)) . '.' . $mimeToExt[$mime];
+                    if (move_uploaded_file($_FILES['evidence']['tmp_name'], $uploadDir . $filename)) {
+                        $evidencePath = 'uploads/' . $filename;
+                    } else {
+                        $err = 'The evidence image could not be saved. Check the uploads folder permissions.';
+                    }
+                }
+            }
+        } elseif (!$err && !empty($_POST['evidence_capture_data'])) {
+            // Camera photos are sent as a base64 data URL in a hidden form field.
+            $dataUrl = $_POST['evidence_capture_data'];
+            if (preg_match('/^data:image\\/(png|jpeg|webp);base64,([A-Za-z0-9+\\/]+=*)$/', $dataUrl, $matches)) {
+                $imageBytes = base64_decode($matches[2], true);
+                if ($imageBytes === false || strlen($imageBytes) > 10 * 1024 * 1024) {
+                    $err = 'The captured evidence image is invalid or too large.';
+                } else {
+                    $imageCheck = @getimagesizefromstring($imageBytes);
+                    if ($imageCheck === false) {
+                        $err = 'The captured evidence is not a valid image.';
+                    } else {
+                        $extension = ($matches[1] === 'jpeg') ? 'jpg' : $matches[1];
+                        $filename = 'evidence_' . bin2hex(random_bytes(12)) . '.' . $extension;
+                        if (file_put_contents($uploadDir . $filename, $imageBytes) !== false) {
+                            $evidencePath = 'uploads/' . $filename;
+                        } else {
+                            $err = 'The captured evidence could not be saved. Check the uploads folder permissions.';
+                        }
+                    }
+                }
+            } else {
+                $err = 'The captured evidence image data is invalid.';
+            }
+        }
+
+        if (!$err) {
         $facePath = null;
         if (!empty($_POST['face_capture_data'])) {
             $imgData = str_replace('data:image/png;base64,', '', $_POST['face_capture_data']);
@@ -126,6 +181,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'submit_report') {
 
         $_SESSION['report_success'] = true;
         header('Location: report-form.php'); exit;
+        } // end if (!$err): evidence could be saved successfully
     }
 }
 
@@ -870,7 +926,7 @@ if (isset($_GET['get_student'])) {
 
   <form method="POST" enctype="multipart/form-data" id="reportForm">
     <input type="hidden" name="action" value="submit_report">
-    <input type="hidden" name="face_capture_data" id="faceCaptureData">
+    <input type="hidden" name="face_capture_data" id="faceCaptureData">\n    <input type="hidden" name="evidence_capture_data" id="evidenceCaptureData">
     <input type="hidden" name="signature_data" id="signatureData">
 
     <!-- STEP 1 -->
@@ -1080,6 +1136,9 @@ function loadViolations(cat) {
 function showFileName(input) {
     const label = document.getElementById('fileNameLabel');
     if (input.files[0]) {
+        evidenceCamData = null;
+        document.getElementById('evidenceCaptureData').value = '';
+        document.getElementById('evidenceCamPreview').style.display = 'none';
         label.textContent = input.files[0].name;
         const reader = new FileReader();
         reader.onload = e => {
@@ -1091,11 +1150,14 @@ function showFileName(input) {
 }
 function clearFile() {
     document.getElementById('evidenceFile').value = '';
+    document.getElementById('evidencePreviewImg').src = '';
     document.getElementById('fileNameLabel').textContent = 'Choose an image…';
     document.getElementById('evidencePreview').style.display = 'none';
 }
 function clearCamEvidence() {
     evidenceCamData = null;
+    document.getElementById('evidenceCaptureData').value = '';
+    document.getElementById('evidenceCamImg').src = '';
     document.getElementById('evidenceCamPreview').style.display = 'none';
 }
 
@@ -1149,6 +1211,11 @@ function confirmPhoto() {
         document.getElementById('faceCaptureBtn').classList.add('active');
     } else {
         evidenceCamData = data;
+        document.getElementById('evidenceCaptureData').value = data;
+        // Keep the evidence source unambiguous: using the camera clears any chosen file.
+        document.getElementById('evidenceFile').value = '';
+        document.getElementById('fileNameLabel').textContent = 'Choose an image…';
+        document.getElementById('evidencePreview').style.display = 'none';
         document.getElementById('evidenceCamImg').src = data;
         document.getElementById('evidenceCamPreview').style.display = 'block';
     }
