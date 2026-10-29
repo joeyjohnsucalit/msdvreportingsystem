@@ -36,7 +36,15 @@ if (isset($_POST['action']) && in_array($_POST['action'],['approve','reject'])) 
     header('Location: student-appeals.php'); exit;
 }
 
-$appeals=$pdo->query("SELECT a.*,s.full_name,v.violation,v.category,v.date_submitted as vdate FROM appeals a JOIN students s ON a.student_id=s.student_id JOIN violations v ON a.violation_id=v.id ORDER BY a.submitted_at DESC")->fetchAll();
+$appeals=$pdo->query("SELECT a.*,s.full_name,v.violation,v.category,v.date_submitted as vdate,
+    COALESCE(u.full_name,'Deleted user') AS reporter_name,
+    COALESCE(u.role,'—') AS reporter_role,
+    u.staff_type AS reporter_staff_type
+  FROM appeals a
+  JOIN students s ON a.student_id=s.student_id
+  JOIN violations v ON a.violation_id=v.id
+  LEFT JOIN users u ON v.reporter_id=u.id
+  ORDER BY a.submitted_at DESC")->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -378,49 +386,74 @@ function viewAppealFromButton(button) {
 }
 
 function viewAppeal(ap){
-    const statusClass = ap.status === 'approved' ? 'approved' : ap.status === 'rejected' ? 'rejected' : 'pending';
+    const status = String(ap.status || 'pending');
+    const statusClass = ['approved','rejected'].includes(status) ? status : 'pending';
+    const category = String(ap.category || '');
+    const categoryClass = ['minor','major'].includes(category) ? category : '';
+    const roleLabels = {admin:'Admin', teacher:'Instructor', csu:'CSU', jassu:'JASSU', nurse:'Nurse', student:'Student'};
+    const staffTypeLabels = {teaching:'Teaching', non_teaching:'Non-Teaching'};
+    const reporterRole = roleLabels[String(ap.reporter_role || '').toLowerCase()] || ap.reporter_role || '—';
+    const staffTypeKey = String(ap.reporter_staff_type || '').toLowerCase().replace(/\s+/g, '_');
+    const staffType = staffTypeLabels[staffTypeKey] || ap.reporter_staff_type || '—';
+    const violationId = Number.parseInt(ap.violation_id, 10);
+    const violationUrl = Number.isInteger(violationId) && violationId > 0
+        ? `violation-records.php?highlight=${violationId}`
+        : 'violation-records.php';
 
     document.getElementById('vaBody').innerHTML = `
         <div class="info-grid">
           <div class="info-cell">
             <div class="info-key">Student ID</div>
-            <div class="info-val sid-val">${ap.student_id}</div>
+            <div class="info-val sid-val">${escHtml(ap.student_id || '—')}</div>
           </div>
           <div class="info-cell">
             <div class="info-key">Full Name</div>
-            <div class="info-val">${ap.full_name}</div>
+            <div class="info-val">${escHtml(ap.full_name || '—')}</div>
           </div>
           <div class="info-cell">
             <div class="info-key">Category</div>
-            <div class="info-val"><span class="mini-badge ${ap.category}">${ap.category.charAt(0).toUpperCase()+ap.category.slice(1)}</span></div>
+            <div class="info-val"><span class="mini-badge ${categoryClass}">${escHtml(category ? category.charAt(0).toUpperCase()+category.slice(1) : '—')}</span></div>
           </div>
           <div class="info-cell">
             <div class="info-key">Violation</div>
-            <div class="info-val">${ap.violation}</div>
+            <div class="info-val">${escHtml(ap.violation || '—')}</div>
           </div>
           <div class="info-cell">
             <div class="info-key">Violation Date</div>
-            <div class="info-val">${ap.vdate}</div>
+            <div class="info-val">${escHtml(ap.vdate || '—')}</div>
           </div>
           <div class="info-cell">
             <div class="info-key">Appeal Submitted</div>
-            <div class="info-val">${ap.submitted_at}</div>
+            <div class="info-val">${escHtml(ap.submitted_at || '—')}</div>
           </div>
           <div class="info-cell">
             <div class="info-key">Status</div>
-            <div class="info-val"><span class="mini-badge ${statusClass}">${ap.status.charAt(0).toUpperCase()+ap.status.slice(1)}</span></div>
+            <div class="info-val"><span class="mini-badge ${statusClass}">${escHtml(status.charAt(0).toUpperCase()+status.slice(1))}</span></div>
+          </div>
+          <div class="info-cell">
+            <div class="info-key">Reporter</div>
+            <div class="info-val">${escHtml(ap.reporter_name || '—')}</div>
+          </div>
+          <div class="info-cell">
+            <div class="info-key">Reporter Role</div>
+            <div class="info-val">${escHtml(reporterRole)}</div>
+          </div>
+          <div class="info-cell">
+            <div class="info-key">Staff Type</div>
+            <div class="info-val">${escHtml(staffType)}</div>
           </div>
           <div class="info-cell full" style="border-bottom:none;">
             <div class="info-key">Explanation</div>
-            <div class="info-val explanation">${ap.explanation}</div>
+            <div class="info-val explanation">${escHtml(ap.explanation || '—')}</div>
           </div>
         </div>`;
 
     const footer = document.getElementById('vaFooter');
-    if(ap.status === 'pending'){
+    const violationButton = `<a class="m-btn ghost" href="${violationUrl}"><i class="fas fa-arrow-up-right-from-square" style="font-size:11px;"></i> View Violation</a>`;
+    if(status === 'pending'){
         footer.innerHTML = `
             <form method="POST" style="display:contents;">
-              <input type="hidden" name="appeal_id" value="${ap.id}">
+              <input type="hidden" name="appeal_id" value="${Number.parseInt(ap.id, 10) || 0}">
               <button name="action" value="approve" class="m-btn success" onclick="return confirm('Approve this appeal? The violation will be removed.')">
                 <i class="fas fa-check" style="font-size:11px;"></i> Approve
               </button>
@@ -428,9 +461,10 @@ function viewAppeal(ap){
                 <i class="fas fa-times" style="font-size:11px;"></i> Reject
               </button>
             </form>
+            ${violationButton}
             <button type="button" class="m-btn ghost" data-bs-dismiss="modal">Close</button>`;
     } else {
-        footer.innerHTML = `<button type="button" class="m-btn ghost" data-bs-dismiss="modal">Close</button>`;
+        footer.innerHTML = `${violationButton}<button type="button" class="m-btn ghost" data-bs-dismiss="modal">Close</button>`;
     }
 
     const modalElement = document.getElementById('viewAppealModal');
