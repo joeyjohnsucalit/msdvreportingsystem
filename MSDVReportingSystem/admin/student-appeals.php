@@ -449,7 +449,7 @@ function viewAppeal(ap){
         </div>`;
 
     const footer = document.getElementById('vaFooter');
-    const violationButton = `<a class="m-btn ghost" href="${violationUrl}"><i class="fas fa-arrow-up-right-from-square" style="font-size:11px;"></i> View Violation</a>`;
+    const violationButton = `<a class="m-btn ghost" href="${violationUrl}"><i class="fas fa-location-crosshairs" style="font-size:11px;"></i> Locate Violation</a>`;
     if(status === 'pending'){
         footer.innerHTML = `
             <form method="POST" style="display:contents;">
