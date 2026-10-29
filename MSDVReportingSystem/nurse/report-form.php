@@ -641,7 +641,7 @@ if (isset($_GET['get_student'])) {
   #cameraOverlay.face-capture-mode .face-capture-topbar { display:flex; align-items:center; justify-content:space-between; min-height:42px; }
   #cameraOverlay.face-capture-mode .face-capture-nav { display:flex; align-items:center; gap:14px; color:#f5f7ff; background:transparent; border:0; font-family:inherit; font-size:16px; font-weight:600; cursor:pointer; padding:4px 0; }
   #cameraOverlay.face-capture-mode .face-capture-nav svg { width:26px; height:26px; }
-  #cameraOverlay.face-capture-mode .face-capture-close { color:#f5f7ff; background:transparent; border:0; padding:4px; cursor:pointer; }
+  #cameraOverlay.face-capture-mode .face-capture-close { display:none !important; }
   #cameraOverlay.face-capture-mode .face-capture-close svg { width:30px; height:30px; }
   #cameraOverlay.face-capture-mode .face-capture-heading { text-align:center; padding-top:22px; }
   #cameraOverlay.face-capture-mode .modal-title { color:#f6f7fb; font-size:clamp(22px, 4.5vw, 36px); line-height:1.2; margin:0 0 8px; font-weight:750; }
@@ -663,6 +663,7 @@ if (isset($_GET['get_student'])) {
   #cameraOverlay.face-capture-mode .face-corner:before { left:0; top:0; width:100%; height:9px; }
   #cameraOverlay.face-capture-mode .face-corner:after { left:0; top:0; width:9px; height:100%; }
   #cameraOverlay.face-capture-mode .face-capture-bottom { flex-shrink:0; padding-top:16px; }
+  #cameraOverlay.face-capture-mode .face-capture-actions { display:flex; justify-content:center; align-items:center; padding:8px 0 max(8px, env(safe-area-inset-bottom)); }
   #cameraOverlay.face-capture-mode .camera-choice { display:flex; align-items:center; justify-content:center; gap:12px; width:max-content; max-width:100%; margin:0 auto 20px; padding:12px 20px; color:#f7f8fc; background:#10151e; border:1px solid #3b4351; border-radius:28px; font-size:15px; font-weight:650; }
   #cameraOverlay.face-capture-mode .camera-choice svg { width:22px; height:22px; }
   #cameraOverlay.face-capture-mode .face-capture-actions { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:10px; }
@@ -1209,15 +1210,8 @@ if (isset($_GET['get_student'])) {
         </svg>
       </div>
       <div class="face-capture-bottom" id="faceCaptureBottom" style="display:none">
-        <div class="camera-choice" aria-label="Back camera selected">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 4l2 2h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-2z"/><circle cx="12" cy="13" r="4"/></svg>
-          <span>Back Camera</span>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-        </div>
         <div class="face-capture-actions">
-          <div class="face-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 18h6M10 22h4M8 14c-1.2-1-2-2.5-2-4.2a6 6 0 1 1 12 0c0 1.7-.8 3.2-2 4.2-.7.6-1 1.1-1 2h-6c0-.9-.3-1.4-1-2Z"/><path d="M12 1v2M3.5 4.5 5 6M20.5 4.5 19 6"/></svg><span>Good lighting<br>helps with accuracy.</span></div>
           <button type="button" class="face-shutter" onclick="capturePhoto()" aria-label="Take face photo"></button>
-          <div class="face-hint" style="justify-content:flex-end"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/><circle cx="12" cy="12" r="4"/><path d="M7 12h10"/></svg><span>Keep your face within<br>the guide.</span></div>
         </div>
       </div>
       <div class="modal-row" id="standardCameraActions">
