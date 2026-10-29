@@ -329,7 +329,11 @@ body { display:flex; background:var(--bg); min-height:100vh; font-family:'Plus J
                 <?php else: ?>
                 <span class="resolved-txt">Resolved</span>
                 <?php endif; ?>
-                <button class="view-btn" onclick='viewAppeal(<?= json_encode($ap) ?>)'>
+                <button
+                  type="button"
+                  class="view-btn"
+                  data-appeal="<?= htmlspecialchars(json_encode($ap, JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_TAG | JSON_HEX_AMP), ENT_QUOTES, 'UTF-8') ?>"
+                  onclick="viewAppealFromButton(this)">
                   <i class="fas fa-eye" style="font-size:11px;"></i> View
                 </button>
               </div>
@@ -363,6 +367,16 @@ body { display:flex; background:var(--bg); min-height:100vh; font-family:'Plus J
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
+function viewAppealFromButton(button) {
+    try {
+        const appeal = JSON.parse(button.getAttribute('data-appeal') || '{}');
+        viewAppeal(appeal);
+    } catch (error) {
+        console.error('Could not read appeal details:', error);
+        alert('Unable to open this appeal. Please refresh the page and try again.');
+    }
+}
+
 function viewAppeal(ap){
     const statusClass = ap.status === 'approved' ? 'approved' : ap.status === 'rejected' ? 'rejected' : 'pending';
 
@@ -419,7 +433,12 @@ function viewAppeal(ap){
         footer.innerHTML = `<button type="button" class="m-btn ghost" data-bs-dismiss="modal">Close</button>`;
     }
 
-    new bootstrap.Modal(document.getElementById('viewAppealModal')).show();
+    const modalElement = document.getElementById('viewAppealModal');
+    if (!window.bootstrap || !bootstrap.Modal) {
+        alert('The appeal details window could not load. Please refresh the page and try again.');
+        return;
+    }
+    bootstrap.Modal.getOrCreateInstance(modalElement).show();
 }
 
 /* ── NOTIFICATIONS ── */
