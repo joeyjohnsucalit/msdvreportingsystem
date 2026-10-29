@@ -190,6 +190,21 @@ body { display:flex; background:var(--bg); min-height:100vh; font-family:'Plus J
 .data-table td.muted { color:var(--text-2); }
 .empty-row td { padding:40px 16px; text-align:center; color:var(--text-3); font-size:13px; }
 
+/* Highlight the matching violation with a red border only */
+tr.violation-highlight > td {
+    background-color: transparent !important;
+    border-top: 1px solid #0030b3 !important;
+    border-bottom: 1px solid #0030b3 !important;
+}
+
+tr.violation-highlight > td:first-child {
+    border-left: 1px solid #0030b3 !important;
+}
+
+tr.violation-highlight > td:last-child {
+    border-right: 1px solid #0030b3 !important;
+}
+
 /* Mini badge */
 .mini-badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:20px; font-size:10.5px; font-weight:600; }
 .mini-badge.minor     { background:#eff4ff; color:#2563eb; }
@@ -596,6 +611,23 @@ function markAllRead(){
 document.addEventListener('DOMContentLoaded', () => {
     fetch('ajax/notifications.php?action=poll').then(r=>r.ok?r.json():null).then(d=>{ if(d&&!d.error) renderNotifs(d); });
     setInterval(()=>{ fetch('ajax/notifications.php?action=poll').then(r=>r.ok?r.json():null).then(d=>{ if(d&&!d.error) renderNotifs(d); }); }, 15000);
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    const params = new URLSearchParams(window.location.search);
+    const violationId = params.get('highlight');
+
+    if (!violationId || !/^\d+$/.test(violationId)) return;
+
+    const row = document.getElementById('row-' + violationId);
+
+    if (row) {
+        row.classList.add('violation-highlight');
+        row.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+        });
+    }
 });
 </script>
 </body>
