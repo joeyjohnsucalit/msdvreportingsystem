@@ -673,6 +673,41 @@ if (isset($_GET['get_student'])) {
   #cameraOverlay.face-capture-mode #capturedImgEl { flex:1; min-height:0; max-height:calc(100dvh - 240px); width:100%; height:auto; object-fit:contain; border-radius:0; aspect-ratio:auto; }
   #cameraOverlay.face-capture-mode .modal-row { padding-bottom:4px; }
   #cameraOverlay.face-capture-mode .modal-row button { min-height:48px; }
+
+  /* Full-screen evidence camera: same immersive layout without the face guide */
+  #cameraOverlay.evidence-capture-mode {
+    align-items:stretch; justify-content:stretch; background:#000; backdrop-filter:none; padding:0;
+  }
+  #cameraOverlay.evidence-capture-mode .modal-sheet {
+    position:relative; width:100%; max-width:none; height:100%; height:100dvh; max-height:none; min-height:100vh;
+    box-sizing:border-box; border-radius:0; padding:max(22px, env(safe-area-inset-top)) 20px max(18px, env(safe-area-inset-bottom));
+    overflow:hidden; background:#020303; color:#f6f7fb; display:flex; flex-direction:column; gap:0; animation:none;
+  }
+  #cameraOverlay.evidence-capture-mode .modal-handle { display:none; }
+  #cameraOverlay.evidence-capture-mode .face-capture-topbar { display:flex; align-items:center; justify-content:space-between; min-height:42px; }
+  #cameraOverlay.evidence-capture-mode .face-capture-nav { display:flex; align-items:center; gap:14px; color:#f5f7ff; background:transparent; border:0; font-family:inherit; font-size:16px; font-weight:600; cursor:pointer; padding:4px 0; }
+  #cameraOverlay.evidence-capture-mode .face-capture-nav svg { width:26px; height:26px; }
+  #cameraOverlay.evidence-capture-mode .face-capture-close { color:#f5f7ff; background:transparent; border:0; padding:4px; cursor:pointer; }
+  #cameraOverlay.evidence-capture-mode .face-capture-close svg { width:30px; height:30px; }
+  #cameraOverlay.evidence-capture-mode .face-capture-heading { text-align:center; padding:22px 0 12px; }
+  #cameraOverlay.evidence-capture-mode .modal-title { color:#f6f7fb; font-size:clamp(22px, 4.5vw, 36px); line-height:1.2; margin:0 0 8px; font-weight:750; }
+  #cameraOverlay.evidence-capture-mode .modal-sub { color:#c4cfe2; font-size:clamp(13px, 2.2vw, 20px); line-height:1.4; margin:0 auto; max-width:760px; }
+  #cameraOverlay.evidence-capture-mode #cameraLive { display:flex; flex:1; min-height:0; flex-direction:column; }
+  #cameraOverlay.evidence-capture-mode .camera-preview-stage { position:relative; flex:1; min-height:180px; display:flex; align-items:center; justify-content:center; overflow:hidden; background:#000; border-radius:0; margin:8px 0 14px; }
+  #cameraOverlay.evidence-capture-mode #cameraStream { position:absolute; inset:0; width:100%; height:100%; max-height:none; aspect-ratio:auto; object-fit:contain; border-radius:0; }
+  #cameraOverlay.evidence-capture-mode .face-corner, #cameraOverlay.evidence-capture-mode .face-guide-overlay { display:none !important; }
+  #cameraOverlay.evidence-capture-mode #standardCameraActions { display:flex; flex-shrink:0; gap:12px; padding:8px 0 4px; }
+  #cameraOverlay.evidence-capture-mode #standardCameraActions .icon-btn { min-height:50px; color:#f5f7ff; background:#10151e; border:1px solid #3b4351; }
+  #cameraOverlay.evidence-capture-mode #standardCameraActions .submit-btn { min-height:50px; margin-top:0; }
+  #cameraOverlay.evidence-capture-mode #cameraReview { flex:1; min-height:0; display:flex; flex-direction:column; justify-content:center; }
+  #cameraOverlay.evidence-capture-mode #capturedImgEl { flex:1; min-height:0; max-height:calc(100dvh - 190px); width:100%; height:auto; object-fit:contain; border-radius:0; aspect-ratio:auto; }
+  #cameraOverlay.evidence-capture-mode .modal-row { padding:12px 0 4px; gap:12px; }
+  #cameraOverlay.evidence-capture-mode .modal-row button { min-height:50px; }
+  @media (max-height:650px) {
+    #cameraOverlay.evidence-capture-mode .face-capture-heading { padding:8px 0; }
+    #cameraOverlay.evidence-capture-mode .camera-preview-stage { margin:4px 0 8px; }
+  }
+
   @media (max-height:650px) {
     #cameraOverlay.face-capture-mode .face-capture-heading { padding-top:8px; }
     #cameraOverlay.face-capture-mode .camera-preview-stage { margin-top:10px; }
@@ -1302,9 +1337,10 @@ function openCamera(mode) {
     document.getElementById('cameraReview').style.display = 'none';
     const overlay = document.getElementById('cameraOverlay');
     overlay.classList.toggle('face-capture-mode', mode === 'face');
+    overlay.classList.toggle('evidence-capture-mode', mode === 'evidence');
     document.getElementById('faceGuideOverlay').style.display = mode === 'face' ? 'block' : 'none';
-    document.getElementById('faceCaptureTopbar').style.display = mode === 'face' ? 'flex' : 'none';
-    document.getElementById('faceCaptureHeading').style.display = mode === 'face' ? 'block' : 'none';
+    document.getElementById('faceCaptureTopbar').style.display = 'flex';
+    document.getElementById('faceCaptureHeading').style.display = 'block';
     document.getElementById('faceCaptureBottom').style.display = mode === 'face' ? 'block' : 'none';
     document.getElementById('standardCameraActions').style.display = mode === 'face' ? 'none' : 'flex';
 
@@ -1364,7 +1400,7 @@ function confirmPhoto() {
 function stopCamera() {
     if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
     const overlay = document.getElementById('cameraOverlay');
-    overlay.classList.remove('active', 'face-capture-mode');
+    overlay.classList.remove('active', 'face-capture-mode', 'evidence-capture-mode');
     document.getElementById('faceGuideOverlay').style.display = 'none';
 }
 
