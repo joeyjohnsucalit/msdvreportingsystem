@@ -814,11 +814,159 @@ footer {
         stroke-dashoffset: 0;
     }
 }
+
+/* INSTALL APP SLIDE-UP MODAL */
+.install-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    background: rgba(3, 12, 38, .62);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .28s ease, visibility .28s ease;
+}
+.install-overlay.show {
+    opacity: 1;
+    visibility: visible;
+}
+.install-modal {
+    position: fixed;
+    left: 50%;
+    bottom: 0;
+    z-index: 9999;
+    width: min(100%, 520px);
+    padding: 12px 24px calc(24px + env(safe-area-inset-bottom));
+    background: #fff;
+    color: var(--ink);
+    border-radius: 24px 24px 0 0;
+    box-shadow: 0 -12px 45px rgba(0, 0, 0, .22);
+    transform: translate(-50%, 110%);
+    visibility: hidden;
+    transition: transform .42s cubic-bezier(.2,.8,.2,1), visibility .42s ease;
+}
+.install-modal.show {
+    transform: translate(-50%, 0);
+    visibility: visible;
+}
+.install-handle {
+    width: 42px;
+    height: 5px;
+    border-radius: 99px;
+    background: #d8deeb;
+    margin: 0 auto 18px;
+}
+.install-modal-top {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+.install-app-icon {
+    width: 64px;
+    height: 64px;
+    flex: 0 0 64px;
+    overflow: hidden;
+    border-radius: 16px;
+    border: 2px solid #e4eaf7;
+    background: var(--navy);
+}
+.install-app-icon img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.install-modal h3 {
+    font-size: 22px;
+    line-height: 1.2;
+    color: var(--navy);
+    margin-bottom: 4px;
+}
+.install-modal .install-subtitle {
+    color: var(--mute);
+    font-size: 13px;
+}
+.install-description {
+    color: #4c5873;
+    font-size: 14px;
+    line-height: 1.55;
+    margin: 12px 0 18px;
+}
+.install-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+.install-actions button {
+    min-height: 48px;
+    padding: 11px 14px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+    font: 600 15px 'Oswald', sans-serif;
+    cursor: pointer;
+}
+.install-now {
+    background: var(--red);
+    color: #fff;
+    border-color: var(--red) !important;
+}
+.install-now:hover {
+    background: #c92f33;
+}
+.install-later {
+    background: #fff;
+    color: var(--navy);
+}
+.install-help {
+    display: none;
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: 10px;
+    background: #f2f5fb;
+    color: #4c5873;
+    font-size: 13px;
+    line-height: 1.5;
+}
+.install-help.show {
+    display: block;
+}
+@media (max-width: 420px) {
+    .install-modal { padding-left: 18px; padding-right: 18px; }
+    .install-modal h3 { font-size: 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .install-overlay, .install-modal { transition: none; }
+}
+
 </style>
 </head>
 
 <body>
 
+
+
+<!-- INSTALL APP MODAL -->
+<div class="install-overlay" id="installOverlay" aria-hidden="true"></div>
+<section class="install-modal" id="installModal" role="dialog"
+         aria-modal="true" aria-labelledby="installTitle" aria-describedby="installDescription">
+    <div class="install-handle" aria-hidden="true"></div>
+    <div class="install-modal-top">
+        <div class="install-app-icon">
+            <img src="assets/images/mccLogo.png" alt="MCC logo">
+        </div>
+        <div>
+            <h3 id="installTitle">Install MSDV App</h3>
+            <p class="install-subtitle">MCC Student Violation Reporting System</p>
+        </div>
+    </div>
+    <p class="install-description" id="installDescription">
+        Get quicker access to MSDV by adding it to your device. Open it like an app whenever you need it.
+    </p>
+    <div class="install-actions">
+        <button class="install-now" id="installNowBtn" type="button">Install App</button>
+        <button class="install-later" id="installLaterBtn" type="button">Maybe Later</button>
+    </div>
+    <div class="install-help" id="installHelp" role="status"></div>
+</section>
 
 <main id="top">
 
@@ -1085,6 +1233,110 @@ tabs.forEach(function (tab, index) {
         }
     });
 });
+
+/* INSTALL APP MODAL */
+(function () {
+    const modal = document.getElementById('installModal');
+    const overlay = document.getElementById('installOverlay');
+    const installButton = document.getElementById('installNowBtn');
+    const laterButton = document.getElementById('installLaterBtn');
+    const help = document.getElementById('installHelp');
+    const dismissedKey = 'msdvInstallPromptDismissed';
+    let deferredInstallPrompt = null;
+
+    function isRunningAsInstalledApp() {
+        return window.matchMedia('(display-mode: standalone)').matches ||
+            window.matchMedia('(display-mode: fullscreen)').matches ||
+            window.navigator.standalone === true;
+    }
+
+    function openInstallModal() {
+        if (isRunningAsInstalledApp() || localStorage.getItem(dismissedKey) === 'yes') {
+            return;
+        }
+
+        modal.classList.add('show');
+        overlay.classList.add('show');
+        modal.setAttribute('aria-hidden', 'false');
+        overlay.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeInstallModal(rememberChoice) {
+        modal.classList.remove('show');
+        overlay.classList.remove('show');
+        modal.setAttribute('aria-hidden', 'true');
+        overlay.setAttribute('aria-hidden', 'true');
+
+        if (rememberChoice) {
+            localStorage.setItem(dismissedKey, 'yes');
+        }
+    }
+
+    window.addEventListener('beforeinstallprompt', function (event) {
+        event.preventDefault();
+        deferredInstallPrompt = event;
+        installButton.textContent = 'Install App';
+        installButton.disabled = false;
+    });
+
+    window.addEventListener('appinstalled', function () {
+        deferredInstallPrompt = null;
+        closeInstallModal(true);
+    });
+
+    installButton.addEventListener('click', async function () {
+        if (isRunningAsInstalledApp()) {
+            closeInstallModal(true);
+            return;
+        }
+
+        if (deferredInstallPrompt) {
+            deferredInstallPrompt.prompt();
+            const result = await deferredInstallPrompt.userChoice;
+            deferredInstallPrompt = null;
+
+            if (result && result.outcome === 'accepted') {
+                closeInstallModal(true);
+            }
+            return;
+        }
+
+        // The browser may not offer an install prompt yet, even if the site
+        // has a manifest. Give the visitor browser-specific manual guidance.
+        help.textContent = /iphone|ipad|ipod/i.test(navigator.userAgent)
+            ? 'To install on iPhone or iPad: tap Share in Safari, then choose “Add to Home Screen”.'
+            : 'If installation is available, open your browser menu (⋮) and choose “Install app” or “Add to Home screen”. This option may not appear until the website meets your browser’s install requirements.';
+        help.classList.add('show');
+    });
+
+    laterButton.addEventListener('click', function () {
+        closeInstallModal(true);
+    });
+
+    overlay.addEventListener('click', function () {
+        closeInstallModal(true);
+    });
+
+    document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && modal.classList.contains('show')) {
+            closeInstallModal(true);
+        }
+    });
+
+    // If installed, never show the prompt. Otherwise show it to first-time
+    // visitors who have not dismissed it, after the page has loaded.
+    window.addEventListener('load', function () {
+        if (!isRunningAsInstalledApp() && localStorage.getItem(dismissedKey) !== 'yes') {
+            window.setTimeout(openInstallModal, 900);
+        }
+    });
+
+    // Also respond if the browser changes into standalone mode while open.
+    window.matchMedia('(display-mode: standalone)').addEventListener?.('change', function (event) {
+        if (event.matches) closeInstallModal(true);
+    });
+})();
+
 </script>
 
 </body>
