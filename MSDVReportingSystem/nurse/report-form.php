@@ -628,72 +628,58 @@ if (isset($_GET['get_student'])) {
     max-height: 90vh;
     overflow-y: auto;
   }
-  /* Full-screen camera only when capturing the student's face */
+  /* Full-screen face capture UI */
   #cameraOverlay.face-capture-mode {
-    align-items: stretch;
-    justify-content: stretch;
-    background: #050914;
-    backdrop-filter: none;
-    padding: 0;
+    align-items: stretch; justify-content: stretch; background:#000; backdrop-filter:none; padding:0;
   }
   #cameraOverlay.face-capture-mode .modal-sheet {
-    width: 100%;
-    max-width: none;
-    height: 100%;
-    max-height: 100dvh;
-    min-height: 100vh;
-    box-sizing: border-box;
-    border-radius: 0;
-    padding: max(18px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom));
-    overflow-y: auto;
-    background: #050914;
-    color: #fff;
-    display: flex;
-    flex-direction: column;
+    position:relative; width:100%; max-width:none; height:100%; height:100dvh; max-height:none; min-height:100vh;
+    box-sizing:border-box; border-radius:0; padding: max(22px, env(safe-area-inset-top)) 20px max(18px, env(safe-area-inset-bottom));
+    overflow:hidden; background:#020303; color:#f6f7fb; display:flex; flex-direction:column; gap:0; animation:none;
   }
-  #cameraOverlay.face-capture-mode .modal-title { color: #fff; font-size: 20px; }
-  #cameraOverlay.face-capture-mode .modal-sub { color: #c4cada; }
-  #cameraOverlay.face-capture-mode .modal-handle { display: none; }
-  #cameraOverlay.face-capture-mode #cameraLive,
-  #cameraOverlay.face-capture-mode #cameraReview { flex: 1; min-height: 0; }
-  #cameraOverlay.face-capture-mode #cameraLive { display: flex; flex-direction: column; }
+  #cameraOverlay.face-capture-mode .modal-handle { display:none; }
+  #cameraOverlay.face-capture-mode .face-capture-topbar { display:flex; align-items:center; justify-content:space-between; min-height:42px; }
+  #cameraOverlay.face-capture-mode .face-capture-nav { display:flex; align-items:center; gap:14px; color:#f5f7ff; background:transparent; border:0; font-family:inherit; font-size:16px; font-weight:600; cursor:pointer; padding:4px 0; }
+  #cameraOverlay.face-capture-mode .face-capture-nav svg { width:26px; height:26px; }
+  #cameraOverlay.face-capture-mode .face-capture-close { color:#f5f7ff; background:transparent; border:0; padding:4px; cursor:pointer; }
+  #cameraOverlay.face-capture-mode .face-capture-close svg { width:30px; height:30px; }
+  #cameraOverlay.face-capture-mode .face-capture-heading { text-align:center; padding-top:22px; }
+  #cameraOverlay.face-capture-mode .modal-title { color:#f6f7fb; font-size:clamp(22px, 4.5vw, 36px); line-height:1.2; margin:0 0 8px; font-weight:750; }
+  #cameraOverlay.face-capture-mode .modal-sub { color:#c4cfe2; font-size:clamp(13px, 2.2vw, 20px); line-height:1.4; margin:0 auto; max-width:760px; }
+  #cameraOverlay.face-capture-mode #cameraLive { display:flex; flex:1; min-height:0; flex-direction:column; }
   #cameraOverlay.face-capture-mode .camera-preview-stage {
-    position: relative;
-    flex: 1;
-    min-height: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-    background: #000;
-    border-radius: 16px;
+    position:relative; flex:1; min-height:220px; display:flex; align-items:center; justify-content:center; overflow:hidden;
+    background:#000; border-radius:0; margin:24px 0 0;
   }
-  #cameraOverlay.face-capture-mode #cameraStream {
-    width: 100%;
-    height: 100%;
-    max-height: calc(100dvh - 190px);
-    aspect-ratio: auto;
-    object-fit: contain;
-    border-radius: 16px;
+  #cameraOverlay.face-capture-mode #cameraStream { position:absolute; inset:0; width:100%; height:100%; max-height:none; aspect-ratio:auto; object-fit:cover; border-radius:0; }
+  #cameraOverlay.face-capture-mode .face-guide-overlay { position:absolute; z-index:2; width:min(64vw, 560px); height:84%; max-height:84%; object-fit:contain; opacity:.92; pointer-events:none; filter:drop-shadow(0 0 2px rgba(0,0,0,.7)); }
+  .face-corner { display:none; }
+  #cameraOverlay.face-capture-mode .face-corner { display:block; position:absolute; z-index:3; width:clamp(40px, 11vw, 108px); height:clamp(40px, 11vw, 108px); pointer-events:none; }
+  #cameraOverlay.face-capture-mode .face-corner:before, #cameraOverlay.face-capture-mode .face-corner:after { content:""; position:absolute; display:block; background:#2582ff; border-radius:5px; }
+  #cameraOverlay.face-capture-mode .face-corner.tl { top:5%; left:2%; }
+  #cameraOverlay.face-capture-mode .face-corner.tr { top:5%; right:2%; transform:scaleX(-1); }
+  #cameraOverlay.face-capture-mode .face-corner.bl { bottom:5%; left:2%; transform:scaleY(-1); }
+  #cameraOverlay.face-capture-mode .face-corner.br { bottom:5%; right:2%; transform:scale(-1); }
+  #cameraOverlay.face-capture-mode .face-corner:before { left:0; top:0; width:100%; height:9px; }
+  #cameraOverlay.face-capture-mode .face-corner:after { left:0; top:0; width:9px; height:100%; }
+  #cameraOverlay.face-capture-mode .face-capture-bottom { flex-shrink:0; padding-top:16px; }
+  #cameraOverlay.face-capture-mode .camera-choice { display:flex; align-items:center; justify-content:center; gap:12px; width:max-content; max-width:100%; margin:0 auto 20px; padding:12px 20px; color:#f7f8fc; background:#10151e; border:1px solid #3b4351; border-radius:28px; font-size:15px; font-weight:650; }
+  #cameraOverlay.face-capture-mode .camera-choice svg { width:22px; height:22px; }
+  #cameraOverlay.face-capture-mode .face-capture-actions { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:10px; }
+  #cameraOverlay.face-capture-mode .face-hint { display:flex; align-items:center; gap:10px; color:#c4cfe2; font-size:clamp(11px, 1.8vw, 16px); line-height:1.4; }
+  #cameraOverlay.face-capture-mode .face-hint svg { width:30px; height:30px; flex-shrink:0; }
+  #cameraOverlay.face-capture-mode .face-shutter { width:clamp(76px, 12vw, 112px); height:clamp(76px, 12vw, 112px); border-radius:50%; border:7px solid #f8faff; background:#287cf4; box-shadow:inset 0 0 0 5px #0d1b32; cursor:pointer; padding:0; }
+  #cameraOverlay.face-capture-mode #cameraReview { flex:1; min-height:0; display:flex; flex-direction:column; justify-content:center; }
+  #cameraOverlay.face-capture-mode #capturedImgEl { flex:1; min-height:0; max-height:calc(100dvh - 240px); width:100%; height:auto; object-fit:contain; border-radius:0; aspect-ratio:auto; }
+  #cameraOverlay.face-capture-mode .modal-row { padding-bottom:4px; }
+  #cameraOverlay.face-capture-mode .modal-row button { min-height:48px; }
+  @media (max-height:650px) {
+    #cameraOverlay.face-capture-mode .face-capture-heading { padding-top:8px; }
+    #cameraOverlay.face-capture-mode .camera-preview-stage { margin-top:10px; }
+    #cameraOverlay.face-capture-mode .face-capture-bottom { padding-top:8px; }
+    #cameraOverlay.face-capture-mode .camera-choice { margin-bottom:8px; padding:8px 16px; }
+    #cameraOverlay.face-capture-mode .face-shutter { width:64px; height:64px; }
   }
-  #cameraOverlay.face-capture-mode .face-guide-overlay {
-    position: absolute;
-    width: min(70vw, 320px);
-    height: min(70%, 62vh);
-    max-height: 62%;
-    object-fit: contain;
-    opacity: .88;
-    pointer-events: none;
-    filter: drop-shadow(0 0 2px rgba(0,0,0,.8));
-  }
-  #cameraOverlay.face-capture-mode #capturedImgEl {
-    max-height: calc(100dvh - 190px);
-    height: auto;
-    aspect-ratio: auto;
-    object-fit: contain;
-  }
-  #cameraOverlay.face-capture-mode .modal-row { padding-bottom: 4px; }
-  #cameraOverlay.face-capture-mode .modal-row button { min-height: 48px; }
 
   .modal-center .modal-sheet {
     border-radius: var(--radius);
@@ -1136,45 +1122,72 @@ if (isset($_GET['get_student'])) {
 <div class="modal-overlay" id="cameraOverlay">
   <div class="modal-sheet">
     <div class="modal-handle"></div>
-    <h2 class="modal-title" id="cameraModalTitle">Camera</h2>
-    <p class="modal-sub" id="cameraModalSub">Position and capture.</p>
+    <div class="face-capture-topbar" id="faceCaptureTopbar" style="display:none">
+      <button type="button" class="face-capture-nav" onclick="stopCamera()" aria-label="Back">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg><span>Back</span>
+      </button>
+      <button type="button" class="face-capture-close" onclick="stopCamera()" aria-label="Close">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="face-capture-heading" id="faceCaptureHeading">
+      <h2 class="modal-title" id="cameraModalTitle">Camera</h2>
+      <p class="modal-sub" id="cameraModalSub">Position and capture.</p>
+    </div>
     <div id="cameraLive">
       <div class="camera-preview-stage">
         <video id="cameraStream" autoplay playsinline muted></video>
-        <svg class="face-guide-overlay" id="faceGuideOverlay" viewBox="0 0 300 420" role="img" aria-label="Face alignment guide" xmlns="http://www.w3.org/2000/svg" style="display:none">
-          <g fill="none" stroke="#f4f7ff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" opacity="0.9">
-            <!-- Outer head silhouette -->
-            <path d="M150 20 C98 20 58 56 45 112 L42 205 C45 275 80 337 119 374 L139 390 L161 390 L181 374 C220 337 255 275 258 205 L255 112 C242 56 202 20 150 20 Z"/>
-            <!-- Forehead and temple mesh -->
-            <path d="M150 20 L150 112 L150 174 L150 232 L150 300 L150 390"/>
-            <path d="M45 112 L94 90 L150 82 L206 90 L255 112"/>
-            <path d="M42 170 L87 142 L126 145 L150 174 L174 145 L213 142 L258 170"/>
-            <path d="M58 72 L94 90 L111 143 L126 198 L150 232 L174 198 L189 143 L206 90 L242 72"/>
-            <!-- Eyes and brow planes -->
-            <path d="M45 205 L78 187 L119 187 L145 201 L150 232 L155 201 L181 187 L222 187 L255 205"/>
-            <path d="M64 211 L91 198 L119 199 L135 211 L119 222 L91 223 Z"/>
-            <path d="M236 211 L209 198 L181 199 L165 211 L181 222 L209 223 Z"/>
-            <path d="M150 174 L145 201 L135 246 L132 278 L150 292 L168 278 L165 246 L155 201"/>
-            <path d="M132 278 L142 286 L150 284 L158 286 L168 278"/>
-            <!-- Cheeks and jaw -->
-            <path d="M42 205 L76 248 L102 286 L119 322 L139 350 L150 356 L161 350 L181 322 L198 286 L224 248 L258 205"/>
-            <path d="M76 248 L119 260 L132 278 M224 248 L181 260 L168 278"/>
-            <path d="M102 286 L132 303 L150 306 L168 303 L198 286"/>
-            <!-- Mouth -->
-            <path d="M112 326 L132 317 L150 322 L168 317 L188 326 L170 339 L150 342 L130 339 Z"/>
-            <path d="M112 326 L150 332 L188 326 M130 339 L150 336 L170 339"/>
-            <!-- Lower face planes -->
-            <path d="M119 322 L130 339 L139 350 L150 356 L161 350 L170 339 L181 322"/>
-            <path d="M119 374 L150 356 L181 374"/>
+        <div class="face-corner tl" aria-hidden="true"></div><div class="face-corner tr" aria-hidden="true"></div>
+        <div class="face-corner bl" aria-hidden="true"></div><div class="face-corner br" aria-hidden="true"></div>
+        <svg class="face-guide-overlay" id="faceGuideOverlay" viewBox="0 0 520 800" role="img" aria-label="Geometric face alignment guide" xmlns="http://www.w3.org/2000/svg" style="display:none">
+          <g fill="none" stroke="#f1f3f8" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round" opacity="0.94">
+            <!-- outer head silhouette -->
+            <path d="M260 22 L205 32 L155 55 L112 90 L79 137 L55 194 L48 254 L48 346 L42 383 L51 459 L72 530 L100 600 L145 660 L205 710 L232 735 L288 735 L315 710 L375 660 L420 600 L448 530 L469 459 L478 383 L472 346 L472 254 L465 194 L441 137 L408 90 L365 55 L315 32 Z"/>
+            <!-- forehead planes -->
+            <path d="M260 22 L260 128 L260 220 L260 330 L260 430 L260 540 L260 735"/>
+            <path d="M205 32 L225 116 L242 205 L260 220 L278 205 L295 116 L315 32"/>
+            <path d="M112 90 L169 143 L205 205 L232 282 L260 330 L288 282 L315 205 L351 143 L408 90"/>
+            <path d="M79 137 L148 190 L196 252 L228 320 L260 330 L292 320 L324 252 L372 190 L441 137"/>
+            <path d="M55 194 L123 235 L180 278 L224 334 L260 346 L296 334 L340 278 L397 235 L465 194"/>
+            <!-- brows and eye sockets -->
+            <path d="M48 346 L105 319 L167 321 L224 344 L260 355 L296 344 L353 321 L415 319 L472 346"/>
+            <path d="M48 383 L101 361 L157 362 L212 383 L239 410 L212 430 L157 431 L101 410 Z"/>
+            <path d="M472 383 L419 361 L363 362 L308 383 L281 410 L308 430 L363 431 L419 410 Z"/>
+            <path d="M101 410 L157 431 L212 430 M419 410 L363 431 L308 430"/>
+            <!-- nose bridge and nose -->
+            <path d="M224 344 L235 399 L229 466 L217 514 L232 538 L260 548 L288 538 L303 514 L291 466 L285 399 L296 344"/>
+            <path d="M235 399 L248 466 L240 516 L232 538 M285 399 L272 466 L280 516 L288 538"/>
+            <path d="M217 514 L239 526 L250 541 L260 548 L270 541 L281 526 L303 514"/>
+            <!-- cheek planes -->
+            <path d="M48 383 L91 445 L133 493 L177 528 L217 514 M472 383 L429 445 L387 493 L343 528 L303 514"/>
+            <path d="M91 445 L157 464 L212 478 L229 466 M429 445 L363 464 L308 478 L291 466"/>
+            <path d="M72 530 L145 554 L204 574 L260 584 L316 574 L375 554 L448 530"/>
+            <!-- mouth -->
+            <path d="M188 610 L222 594 L260 605 L298 594 L332 610 L305 632 L280 640 L240 640 L215 632 Z"/>
+            <path d="M188 610 L260 620 L332 610 M215 632 L260 628 L305 632"/>
+            <path d="M204 574 L222 594 L215 632 L240 660 L260 666 L280 660 L305 632 L298 594 L316 574"/>
+            <!-- jaw and chin facets -->
+            <path d="M100 600 L145 660 L205 710 L232 735 M420 600 L375 660 L315 710 L288 735"/>
+            <path d="M145 660 L204 650 L240 660 L260 666 L280 660 L316 650 L375 660"/>
+            <path d="M205 710 L240 660 L260 666 L280 660 L315 710"/>
           </g>
         </svg>
       </div>
-      <div class="modal-row">
+      <div class="face-capture-bottom" id="faceCaptureBottom" style="display:none">
+        <div class="camera-choice" aria-label="Back camera selected">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 4l2 2h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3l2-2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <span>Back Camera</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="face-capture-actions">
+          <div class="face-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 18h6M10 22h4M8 14c-1.2-1-2-2.5-2-4.2a6 6 0 1 1 12 0c0 1.7-.8 3.2-2 4.2-.7.6-1 1.1-1 2h-6c0-.9-.3-1.4-1-2Z"/><path d="M12 1v2M3.5 4.5 5 6M20.5 4.5 19 6"/></svg><span>Good lighting<br>helps with accuracy.</span></div>
+          <button type="button" class="face-shutter" onclick="capturePhoto()" aria-label="Take face photo"></button>
+          <div class="face-hint" style="justify-content:flex-end"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M8 21H5a2 2 0 0 1-2-2v-3M16 21h3a2 2 0 0 0 2-2v-3"/><circle cx="12" cy="12" r="4"/><path d="M7 12h10"/></svg><span>Keep your face within<br>the guide.</span></div>
+        </div>
+      </div>
+      <div class="modal-row" id="standardCameraActions">
         <button type="button" class="icon-btn" onclick="stopCamera()">Cancel</button>
-        <button type="button" class="submit-btn" onclick="capturePhoto()" style="flex:2">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          Capture
-        </button>
+        <button type="button" class="submit-btn" onclick="capturePhoto()" style="flex:2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg> Capture</button>
       </div>
     </div>
     <div id="cameraReview" style="display:none">
@@ -1284,12 +1297,16 @@ function openCamera(mode) {
     document.getElementById('cameraModalTitle').textContent =
         mode === 'face' ? 'Capture Student Face' : 'Take Photo Evidence';
     document.getElementById('cameraModalSub').textContent =
-        mode === 'face' ? 'Frame the student\'s face clearly.' : 'Capture the evidence clearly.';
-    document.getElementById('cameraLive').style.display = 'block';
+        mode === 'face' ? 'Make sure your face is clearly visible and aligned within the guide.' : 'Capture the evidence clearly.';
+    document.getElementById('cameraLive').style.display = mode === 'face' ? 'flex' : 'block';
     document.getElementById('cameraReview').style.display = 'none';
     const overlay = document.getElementById('cameraOverlay');
     overlay.classList.toggle('face-capture-mode', mode === 'face');
     document.getElementById('faceGuideOverlay').style.display = mode === 'face' ? 'block' : 'none';
+    document.getElementById('faceCaptureTopbar').style.display = mode === 'face' ? 'flex' : 'none';
+    document.getElementById('faceCaptureHeading').style.display = mode === 'face' ? 'block' : 'none';
+    document.getElementById('faceCaptureBottom').style.display = mode === 'face' ? 'block' : 'none';
+    document.getElementById('standardCameraActions').style.display = mode === 'face' ? 'none' : 'flex';
 
     // Use the back camera for both face capture and evidence.
     const constraints = {
@@ -1316,7 +1333,7 @@ function capturePhoto() {
     canvas.getContext('2d').drawImage(video, 0, 0);
     document.getElementById('capturedImgEl').src = canvas.toDataURL('image/png');
     document.getElementById('cameraLive').style.display = 'none';
-    document.getElementById('cameraReview').style.display = 'block';
+    document.getElementById('cameraReview').style.display = cameraMode === 'face' ? 'flex' : 'block';
 }
 
 function retakePhoto() {
