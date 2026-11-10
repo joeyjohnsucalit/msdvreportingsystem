@@ -618,16 +618,15 @@ if (isset($_GET['get_student'])) {
   }
   #cameraOverlay.face-capture-mode #cameraStream { position:absolute; inset:0; width:100%; height:100%; max-height:none; aspect-ratio:auto; object-fit:cover; border-radius:0; }
   #cameraOverlay.face-capture-mode .face-capture-bottom { flex-shrink:0; padding-top:16px; }
-  #cameraOverlay.face-capture-mode .face-capture-actions { display:flex; justify-content:center; align-items:center; padding:8px 0 max(8px, env(safe-area-inset-bottom)); }
-  #cameraOverlay.face-capture-mode .face-capture-actions { display:flex; width:100%; justify-content:center; align-items:center; gap:10px; }
-  #cameraOverlay.face-capture-mode .face-capture-actions .face-shutter { display:block; flex:0 0 auto; margin-inline:auto; }
-  #cameraOverlay.face-capture-mode .face-shutter { width:clamp(76px, 12vw, 112px); height:clamp(76px, 12vw, 112px); border-radius:50%; border:7px solid #f8faff; background:#287cf4; box-shadow:inset 0 0 0 5px #0d1b32; cursor:pointer; padding:0; }
+  /* Face mode is fully automatic: there is no shutter button at all */
+  #cameraOverlay.face-capture-mode .face-capture-actions,
+  #cameraOverlay.face-capture-mode .face-shutter { display:none !important; }
   #cameraOverlay.face-capture-mode #cameraReview { flex:1; min-height:0; display:flex; flex-direction:column; justify-content:center; }
   #cameraOverlay.face-capture-mode #capturedImgEl { flex:1; min-height:0; max-height:calc(100dvh - 240px); width:100%; height:auto; object-fit:contain; border-radius:0; aspect-ratio:auto; }
   #cameraOverlay.face-capture-mode .modal-row { padding-bottom:4px; }
   #cameraOverlay.face-capture-mode .modal-row button { min-height:48px; }
 
-  /* ── AUTO FACE CAPTURE: oval guide + status ── */
+  /* ── AUTO FACE CAPTURE: oblong guide + status ── */
   .face-oval {
     display:none;
     position:absolute;
@@ -636,7 +635,7 @@ if (isset($_GET['get_student'])) {
     transform:translate(-50%,-50%);
     border:5px solid #ef4444;                    /* red = face does not fit */
     border-radius:50%;
-    box-shadow:0 0 0 9999px rgba(0,0,0,0.45);    /* dims everything outside the oval */
+    box-shadow:0 0 0 9999px rgba(0,0,0,0.45);    /* dims everything outside the oblong */
     pointer-events:none;
     transition:border-color .2s ease;
   }
@@ -681,7 +680,7 @@ if (isset($_GET['get_student'])) {
   #cameraOverlay.evidence-capture-mode #standardCameraActions { display:none !important; }
   #cameraOverlay.evidence-capture-mode .face-capture-bottom { display:block; flex-shrink:0; padding-top:16px; }
   #cameraOverlay.evidence-capture-mode .face-capture-actions { display:flex; justify-content:center; align-items:center; padding:8px 0 max(8px, env(safe-area-inset-bottom)); }
-  #cameraOverlay.evidence-capture-mode .face-shutter { width:clamp(76px, 12vw, 112px); height:clamp(76px, 12vw, 112px); border-radius:50%; border:7px solid #f8faff; background:#287cf4; box-shadow:inset 0 0 0 5px #0d1b32; cursor:pointer; padding:0; }
+  #cameraOverlay.evidence-capture-mode .face-shutter { display:block; width:clamp(76px, 12vw, 112px); height:clamp(76px, 12vw, 112px); border-radius:50%; border:7px solid #f8faff; background:#287cf4; box-shadow:inset 0 0 0 5px #0d1b32; cursor:pointer; padding:0; }
   #cameraOverlay.evidence-capture-mode #cameraReview { flex:1; min-height:0; display:flex; flex-direction:column; justify-content:center; }
   #cameraOverlay.evidence-capture-mode #capturedImgEl { flex:1; min-height:0; max-height:calc(100dvh - 240px); width:100%; height:auto; object-fit:contain; border-radius:0; aspect-ratio:auto; }
   #cameraOverlay.evidence-capture-mode .modal-row { padding-bottom:4px; }
@@ -695,7 +694,6 @@ if (isset($_GET['get_student'])) {
     #cameraOverlay.face-capture-mode .face-capture-heading { padding-top:8px; }
     #cameraOverlay.face-capture-mode .camera-preview-stage { margin-top:10px; }
     #cameraOverlay.face-capture-mode .face-capture-bottom { padding-top:8px; }
-    #cameraOverlay.face-capture-mode .face-shutter { width:64px; height:64px; }
   }
 
   .modal-center .modal-sheet {
@@ -761,6 +759,21 @@ if (isset($_GET['get_student'])) {
   .confirm-icon svg { width: 22px; height: 22px; color: var(--accent); }
   .confirm-text { text-align: center; font-size: 14px; color: var(--text-secondary); margin-bottom: 20px; }
   .confirm-text strong { display: block; font-size: 16px; color: var(--text-primary); margin-bottom: 6px; }
+
+  /* face consent modal */
+  .consent-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 16px;
+    text-align: left;
+  }
+  .consent-box strong { color: var(--text-primary); }
+  .consent-box ul { margin: 8px 0 0 18px; }
 
   /* first login modal */
   .first-login-badge {
@@ -1109,7 +1122,8 @@ if (isset($_GET['get_student'])) {
       <div class="section-body">
         <div class="field">
           <label>Face Capture</label>
-          <button type="button" class="icon-btn" id="faceCaptureBtn" onclick="openCamera('face')">
+          <!-- Opens the consent pop-up first; the camera only starts after the student approves -->
+          <button type="button" class="icon-btn" id="faceCaptureBtn" onclick="openFaceConsent()">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             Capture Student Face
           </button>
@@ -1154,13 +1168,13 @@ if (isset($_GET['get_student'])) {
     <div id="cameraLive">
       <div class="camera-preview-stage" id="cameraStage">
         <video id="cameraStream" autoplay playsinline muted></video>
-        <!-- Oval guide: red when the face does not fit, green when it fits -->
+        <!-- Oblong guide: red when the face does not fit, green when it fits -->
         <div class="face-oval" id="faceOval" aria-hidden="true"></div>
       </div>
       <div class="face-capture-bottom" id="faceCaptureBottom" style="display:none">
         <div class="face-status info" id="faceStatus" role="status" aria-live="polite"></div>
-        <div class="face-capture-actions">
-          <!-- Manual shutter: evidence mode always, face mode only if auto-detection is unavailable -->
+        <!-- Shutter is used for EVIDENCE photos only. It is never shown for face capture. -->
+        <div class="face-capture-actions" id="faceCaptureActions">
           <button type="button" class="face-shutter" id="faceShutter" onclick="capturePhoto()" aria-label="Take photo"></button>
         </div>
       </div>
@@ -1196,6 +1210,31 @@ if (isset($_GET['get_student'])) {
     <div style="display:flex;gap:8px">
       <button type="button" class="icon-btn" style="flex:1;justify-content:center" onclick="closeConfirm()">Cancel</button>
       <button type="button" class="submit-btn" style="flex:2" onclick="doSubmit()">Confirm &amp; Submit</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── FACE CAPTURE CONSENT MODAL ── -->
+<div class="modal-overlay modal-center" id="faceConsentOverlay">
+  <div class="modal-sheet" style="border-radius:var(--radius)">
+    <div class="confirm-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </div>
+    <p class="confirm-text" style="margin-bottom:14px">
+      <strong>Student Consent Required</strong>
+      Please hand the device to the student and let them read this notice.
+    </p>
+    <div class="consent-box">
+      By tapping <strong>Approve</strong>, I, the student named in this report, voluntarily consent to have my face photographed using this device. I understand that:
+      <ul>
+        <li>The photo is used only to verify my identity in this violation report.</li>
+        <li>It will be stored securely and viewed only by authorized school personnel.</li>
+        <li>It will not be shared with third parties or used for any other purpose.</li>
+      </ul>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button type="button" class="icon-btn" style="flex:1;justify-content:center" onclick="closeFaceConsent()">Decline</button>
+      <button type="button" class="submit-btn" style="flex:2;margin-top:0" onclick="approveFaceConsent()">Approve</button>
     </div>
   </div>
 </div>
@@ -1270,18 +1309,21 @@ function clearCamEvidence() {
 
 /* ═══════════════════════════════════════════════════════════
    AUTO FACE DETECTION (MediaPipe BlazeFace, with native
-   FaceDetector API as a fallback)
+   FaceDetector API as a fallback). Face capture is 100%
+   automatic: there is no manual shutter in face mode.
    ═══════════════════════════════════════════════════════════ */
-const FACE_HOLD_MS      = 1500;   // how long the face must stay inside the oval, steady, before auto-capture
+const FACE_HOLD_MS      = 1500;   // how long the face must stay inside the oblong, steady, before auto-capture
 const FACE_MOVE_TOL     = 0.05;   // max drift allowed while holding (fraction of stage width)
 const DETECT_INTERVAL   = 120;    // ms between detection runs
+const DETECTOR_RETRY_MS = 3000;   // retry loading the detector if it failed (e.g. offline)
+const OVAL_RATIO        = 0.72;   // oblong width / height (smaller = taller and narrower)
 const MP_VERSION        = '0.10.14';
 const MP_BASE           = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@' + MP_VERSION;
 const MP_MODEL          = 'https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite';
 
 let faceDetectorPromise = null;   // resolves to async (video) => {x,y,w,h} | null
 let faceLoopActive = false;
-let faceHoldStart = 0, faceAnchor = null, faceLastRun = 0;
+let faceHoldStart = 0, faceAnchor = null, faceLastRun = 0, faceRetryTimer = null;
 
 function initFaceDetector() {
     if (faceDetectorPromise) return faceDetectorPromise;
@@ -1330,12 +1372,12 @@ function initFaceDetector() {
     return faceDetectorPromise;
 }
 
-/* Oval geometry in the preview stage's own pixel space */
+/* Oblong geometry in the preview stage's own pixel space */
 function getOval() {
     const stage = document.getElementById('cameraStage');
     const W = stage.clientWidth, H = stage.clientHeight;
-    let ry = H * 0.42, rx = ry * 0.78;
-    if (rx > W * 0.44) { rx = W * 0.44; ry = rx / 0.78; }
+    let ry = H * 0.42, rx = ry * OVAL_RATIO;
+    if (rx > W * 0.44) { rx = W * 0.44; ry = rx / OVAL_RATIO; }
     return { W, H, cx: W / 2, cy: H / 2, rx, ry };
 }
 function layoutOval() {
@@ -1352,7 +1394,7 @@ function setFaceUI(state, text) {          // state: 'bad' | 'ok' | 'info'
     stat.textContent = text;
 }
 
-/* Does the detected face fit in the oval? Returns {fit, msg, cx, cy} */
+/* Does the detected face fit in the oblong? Returns {fit, msg, cx, cy} */
 function evaluateFace(box, video) {
     const o = getOval();
     const vw = video.videoWidth, vh = video.videoHeight;
@@ -1374,13 +1416,14 @@ function evaluateFace(box, video) {
     let msg = '';
     if (box.count > 1) msg = 'Only one face should be in view';
     else if (tooSmall) msg = 'Move closer';
-    else if (!edgesInside) msg = hRatio > 0.85 ? 'Move back' : 'Center the face inside the oval';
+    else if (!edgesInside) msg = hRatio > 0.85 ? 'Move back' : 'Center the face inside the oblong';
 
     return { fit: !msg, msg, cx: fcx, cy: fcy, stageW: o.W };
 }
 
 function startFaceLoop() {
     faceLoopActive = true; faceHoldStart = 0; faceAnchor = null; faceLastRun = 0;
+    clearTimeout(faceRetryTimer);
     const video = document.getElementById('cameraStream');
     setFaceUI('info', 'Starting face detection…');
     layoutOval();
@@ -1403,11 +1446,12 @@ function startFaceLoop() {
         };
         requestAnimationFrame(tick);
     }).catch(() => {
-        // Detection could not load (offline / blocked) → fall back to manual capture
+        // Detection could not load (offline / blocked). There is no manual capture,
+        // so keep the camera open and retry automatically until it loads.
         if (!faceLoopActive) return;
         document.getElementById('faceOval').classList.remove('ok');
-        document.getElementById('faceShutter').style.display = 'block';
-        setFaceUI('info', 'Auto-detect unavailable. Fit the face in the oval and tap the button.');
+        setFaceUI('info', 'Loading face detection… check your internet connection.');
+        faceRetryTimer = setTimeout(() => { if (faceLoopActive) startFaceLoop(); }, DETECTOR_RETRY_MS);
     });
 }
 
@@ -1442,6 +1486,19 @@ function handleDetection(box, video, now) {
 
 function stopFaceLoop() {
     faceLoopActive = false; faceHoldStart = 0; faceAnchor = null;
+    clearTimeout(faceRetryTimer);
+}
+
+/* ── FACE CAPTURE CONSENT ── */
+function openFaceConsent() {
+    document.getElementById('faceConsentOverlay').classList.add('active');
+}
+function closeFaceConsent() {
+    document.getElementById('faceConsentOverlay').classList.remove('active');
+}
+function approveFaceConsent() {
+    closeFaceConsent();
+    openCamera('face');   // camera only opens after the student approves
 }
 
 /* ── CAMERA ── */
@@ -1453,7 +1510,7 @@ function openCamera(mode) {
     document.getElementById('cameraModalTitle').textContent =
         isFace ? 'Capture Student Face' : 'Take Photo Evidence';
     document.getElementById('cameraModalSub').textContent =
-        isFace ? 'Fit the face inside the oval. It turns green and captures automatically when you hold steady.' : 'Capture the evidence clearly.';
+        isFace ? 'Fit the face inside the oblong. It turns green and captures automatically when you hold steady.' : 'Capture the evidence clearly.';
     document.getElementById('cameraLive').style.display = 'flex';
     document.getElementById('cameraReview').style.display = 'none';
     const overlay = document.getElementById('cameraOverlay');
@@ -1461,8 +1518,10 @@ function openCamera(mode) {
     overlay.classList.toggle('evidence-capture-mode', !isFace);
     document.getElementById('faceOval').style.display = isFace ? 'block' : 'none';
     document.getElementById('faceStatus').style.display = isFace ? 'block' : 'none';
-    // Face mode is automatic (no shutter); evidence mode keeps the manual shutter
+    // Face mode is fully automatic: the shutter (and its container) is removed.
+    // Evidence mode keeps the manual shutter.
     document.getElementById('faceShutter').style.display = isFace ? 'none' : 'block';
+    document.getElementById('faceCaptureActions').style.display = isFace ? 'none' : 'flex';
     document.getElementById('faceCaptureTopbar').style.display = 'flex';
     document.getElementById('faceCaptureHeading').style.display = 'block';
     document.getElementById('faceCaptureBottom').style.display = 'block';
@@ -1660,6 +1719,9 @@ document.getElementById('cameraOverlay').addEventListener('click', function(e){
 });
 document.getElementById('confirmOverlay').addEventListener('click', function(e){
     if (e.target === this) closeConfirm();
+});
+document.getElementById('faceConsentOverlay').addEventListener('click', function(e){
+    if (e.target === this) closeFaceConsent();
 });
 </script>
 <script>
