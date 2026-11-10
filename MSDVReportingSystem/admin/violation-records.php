@@ -49,8 +49,6 @@ $stmt=$pdo->prepare("SELECT v.*,s.full_name,c.name as course_name,d.name as dept
   $where ORDER BY v.date_submitted DESC");
 $stmt->execute($params);$violations=$stmt->fetchAll();
 
-$tallyRows=$pdo->query("SELECT student_id,category,COUNT(*) as cnt FROM violations GROUP BY student_id,category")->fetchAll();
-$tallies=[];foreach($tallyRows as $t)$tallies[$t['student_id']][$t['category']]=(int)$t['cnt'];
 $highlight=(int)($_GET['highlight']??0);
 ?>
 <!DOCTYPE html>
@@ -188,9 +186,10 @@ body { display:flex; background:var(--bg); min-height:100vh; font-family:'Plus J
 .data-table td.sid { font-weight:600; font-family:monospace; font-size:12.5px; color:var(--accent); letter-spacing:0.2px; }
 .data-table td.name { font-weight:500; }
 .data-table td.muted { color:var(--text-2); }
+.data-table td.time { color:var(--text-2); white-space:nowrap; }
 .empty-row td { padding:40px 16px; text-align:center; color:var(--text-3); font-size:13px; }
 
-/* Highlight the matching violation with a red border only */
+/* Highlight the matching violation with a border only */
 tr.violation-highlight > td {
     background-color: transparent !important;
     border-top: 1px solid #0030b3 !important;
@@ -214,14 +213,6 @@ tr.violation-highlight > td:last-child {
 .mini-badge.pending   { background:#f4f5f7; color:#6b7280; }
 .mini-badge.teaching     { background:#eff4ff; color:#2563eb; }
 .mini-badge.non_teaching { background:#f5f3ff; color:#7c3aed; }
-
-/* Tally boxes */
-.tally-wrap { display:flex; gap:4px; align-items:center; }
-.tally-box { width:15px; height:15px; border-radius:3px; border:2px solid; }
-.tally-box.minor-empty  { border-color:#2563eb; background:transparent; }
-.tally-box.minor-filled { border-color:#2563eb; background:#2563eb; }
-.tally-box.major-empty  { border-color:#dc2626; background:transparent; }
-.tally-box.major-filled { border-color:#dc2626; background:#dc2626; }
 
 /* Action btn */
 .view-btn { display:inline-flex; align-items:center; gap:6px; padding:6px 12px; border-radius:var(--r-sm); font-size:12px; font-weight:500; border:1px solid var(--border); background:#fff; color:var(--text-2); cursor:pointer; font-family:'Plus Jakarta Sans',sans-serif; transition:all 0.15s; }
@@ -381,7 +372,7 @@ tr.violation-highlight > td:last-child {
             <th>Type</th>
             <th>Violation</th>
             <th>Date</th>
-            <th>Tally</th>
+            <th>Time</th>
             <th>Status</th>
             <th style="width:80px;"></th>
           </tr>
@@ -390,8 +381,6 @@ tr.violation-highlight > td:last-child {
           <?php if(empty($violations)): ?>
           <tr class="empty-row"><td colspan="8"><i class="fas fa-list" style="font-size:20px;display:block;margin-bottom:8px;"></i>No violations found</td></tr>
           <?php else: foreach($violations as $v):
-            $minorCount=$tallies[$v['student_id']]['minor']??0;
-            $majorCount=$tallies[$v['student_id']]['major']??0;
             $rowHighlight=($highlight&&$highlight==$v['id'])?'highlight':'';
           ?>
           <tr class="<?= $rowHighlight ?>" id="row-<?= $v['id'] ?>">
@@ -400,15 +389,7 @@ tr.violation-highlight > td:last-child {
             <td><span class="mini-badge <?= $v['category'] ?>"><?= ucfirst($v['category']) ?></span></td>
             <td class="muted"><?= htmlspecialchars($v['violation']) ?></td>
             <td class="muted"><?= date('M d, Y',strtotime($v['date_submitted'])) ?></td>
-            <td>
-              <div class="tally-wrap">
-                <?php if($v['category']==='minor'): for($i=1;$i<=5;$i++): ?>
-                  <div class="tally-box <?= $i<=$minorCount?'minor-filled':'minor-empty' ?>"></div>
-                <?php endfor; else: for($i=1;$i<=3;$i++): ?>
-                  <div class="tally-box <?= $i<=$majorCount?'major-filled':'major-empty' ?>"></div>
-                <?php endfor; endif; ?>
-              </div>
-            </td>
+            <td class="time"><?= date('h:i A',strtotime($v['date_submitted'])) ?></td>
             <td><span class="mini-badge <?= $v['status'] ?>"><?= ucfirst($v['status']) ?></span></td>
             <td><button class="view-btn" onclick='openViolationView(<?= json_encode($v, JSON_HEX_APOS|JSON_HEX_QUOT|JSON_HEX_AMP|JSON_HEX_TAG) ?>)'><i class="fas fa-eye" style="font-size:11px;"></i> View</button></td>
           </tr>
